@@ -16,8 +16,8 @@ Some features:
   * Compatible with both 5 and 6-volt RC systems, or the lights can be powered by a separate voltage source.
   * Compatible with standard aftermarket RC LED lights sush as those sold by YeahRacing. 
 
-There are no pre-assembled boards available for sale at this time, but you can buy bare PCBs [from OSH Park](https://oshpark.com/shared_projects/kmCzNipk). 
+There are no pre-assembled boards available for sale at this time, but you can buy bare PCBs **[from OSH Park](https://oshpark.com/shared_projects/kmCzNipk)**. 
 
 A bill of materials is included in the Hardware folder. 
 
-Please [see the RCGroups thread](http://www.rcgroups.com/forums/showthread.php?t=1539753) for more information. 
+Please **[see the RCGroups thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)** for more information. 
