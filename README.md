@@ -1,2 +1,2 @@
 # OSL_Original
-The original OSL - ATmega 328 based through hole board. 
+The original OSL - uses an ATmega 328 DIP chip on an easy-to-assemble through hole board. 
