@@ -6,7 +6,7 @@
 
     // EXPLANATION OF STATES
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // Each light can respond to nine different conditions, or states. These are: 
+    // Each light can respond to 14 different conditions, or states. These are: 
     // - Channel 3 - Position 1    
     // - Channel 3 - Position 2
     // - Channel 3 - Position 3    (This is the middle position if using a 3-position switch)
@@ -15,6 +15,7 @@
     // - Forward
     // - Reverse
     // - Stop
+    // - Stop Delay                (stopped for LongStopTime_mS milliseconds, set by user on UserConfig tab)
     // - Brake
     // - Right Turn
     // - Left Turn
@@ -72,29 +73,29 @@
         {
         //                                     IF CHANNEL 3 is only 3-position switch, values in Pos2 and Pos4 will be ignored (just use Pos1, Pos3, Pos5)
         //     SCHEME ONE - EXAMPLE PROVIDED
-        //     Pos 1      Pos 2      Pos 3      Pos 4       Pos 5     Forward     Reverse     Stop      Brake     Right Turn     Left Turn      Accelerating   Decelerating
-        // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            {  OFF,       OFF,       XENON,     XENON,      XENON,     NA,         NA,         NA,       NA,       NA,            NA,           FASTBLINK,     NA       },  // Light 1    -- Headlight One - XENON on when Channel 3 is in the middle-to-far position - FASTBLINK on overtaking
-            {  FADEOFF,   FADEOFF,   ON,        ON,         ON,        NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 2    -- Headlight Two - ON when Channel 3 is in the middle-to-far position, fadeoff otherwise
-            {  OFF,       OFF,       DIM,       DIM,        DIM,       NA,         NA,         NA,       ON,       NA,            NA,           NA,            NA       },  // Light 3    -- Brake Light - ON when Braking, otherwise DIM if Channel 3 is in the middle-to-far positions
-            {  OFF,       OFF,       DIM,       DIM,        DIM,       NA,         NA,         NA,       NA,       SOFTBLINK,     NA,           NA,            NA       },  // Light 4    -- Right Turn Lights - SOFTBLINK when turning Right, otherwise DIM if Channel 3 is in middle-to-far positions
-            {  OFF,       OFF,       DIM,       DIM,        DIM,       NA,         NA,         NA,       NA,       NA,            SOFTBLINK,    NA,            NA       },  // Light 5    -- Left Turn Lights - SOFTBLINK when turning Left, otherwise DIM if Channel 3 is in middle-to-far positions
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         ON,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 6    -- Reverse Lights - only on when moving in Reverse
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            BACKFIRE },  // Light 7    -- Muffler Light - special backfire effect when decelerating
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         BLINK,      NA,       NA,       NA,            NA,           NA,            NA       }   // Light 8    -- Backup hazards - blinks when car is in reverse.
+        //     Pos 1      Pos 2      Pos 3      Pos 4       Pos 5     Forward     Reverse     Stop      StopDelay   Brake     Right Turn     Left Turn      Accelerating   Decelerating
+        // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            {  OFF,       OFF,       XENON,     XENON,      XENON,     NA,         NA,         NA,       NA,        NA,       NA,            NA,           FASTBLINK,     NA       },  // Light 1    -- Headlight One - XENON on when Channel 3 is in the middle-to-far position - FASTBLINK on overtaking
+            {  FADEOFF,   FADEOFF,   ON,        ON,         ON,        NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 2    -- Headlight Two - ON when Channel 3 is in the middle-to-far position, fadeoff otherwise
+            {  OFF,       OFF,       DIM,       DIM,        DIM,       NA,         NA,         NA,       NA,        ON,       NA,            NA,           NA,            NA       },  // Light 3    -- Brake Light - ON when Braking, otherwise DIM if Channel 3 is in the middle-to-far positions
+            {  OFF,       OFF,       DIM,       DIM,        DIM,       NA,         NA,         NA,       NA,        NA,       SOFTBLINK,     NA,           NA,            NA       },  // Light 4    -- Right Turn Lights - SOFTBLINK when turning Right, otherwise DIM if Channel 3 is in middle-to-far positions
+            {  OFF,       OFF,       DIM,       DIM,        DIM,       NA,         NA,         NA,       NA,        NA,       NA,            SOFTBLINK,    NA,            NA       },  // Light 5    -- Left Turn Lights - SOFTBLINK when turning Left, otherwise DIM if Channel 3 is in middle-to-far positions
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         ON,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 6    -- Reverse Lights - only on when moving in Reverse
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            BACKFIRE },  // Light 7    -- Muffler Light - special backfire effect when decelerating
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         BLINK,      NA,       NA,        NA,       NA,            NA,           NA,            NA       }   // Light 8    -- Backup hazards - blinks when car is in reverse.
         },
         {
         //     SCHEME TWO - BLANK
-        //     Pos 1      Pos 2      Pos 3      Pos 4       Pos 5     Forward     Reverse     Stop      Brake     Right Turn     Left Turn      Accelerating   Decelerating
-        // ------------------------------------------------------------------------------------------------------------------------------------------------------------------
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 1    -- 
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 2    -- 
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 3    -- 
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 4    -- 
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 5    --             
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 6    -- 
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       },  // Light 7    -- 
-            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,       NA,            NA,           NA,            NA       }   // Light 8    --
+        //     Pos 1      Pos 2      Pos 3      Pos 4       Pos 5     Forward     Reverse     Stop      StopDelay   Brake     Right Turn     Left Turn      Accelerating   Decelerating
+        // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 1    -- 
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 2    -- 
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 3    -- 
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 4    -- 
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 5    --             
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 6    -- 
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       },  // Light 7    -- 
+            {  OFF,       OFF,       OFF,       OFF,        OFF,       NA,         NA,         NA,       NA,        NA,       NA,            NA,           NA,            NA       }   // Light 8    --
         },
     };
 

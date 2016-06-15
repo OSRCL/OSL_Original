@@ -54,7 +54,11 @@ void SetLights(int DriveMode)
                 if (LightSettings[j][StateRev]  != NA) { SaveSetting[j] = LightSettings[j][StateRev]; }
                 break;
             case STOP:
+                // We have two stop states: 
+                // StateStop occurs when the vehicle stops
+                // StateStopDelay occurs when the vehicle has been stopped for LongStopTime_mS and will supersede StateStop when it occurs (if not NA)
                 if (LightSettings[j][StateStop] != NA) { SaveSetting[j] = LightSettings[j][StateStop]; }
+                if (LightSettings[j][StateStopDelay] != NA && StoppedLongTime == true) { SaveSetting[j] = LightSettings[j][StateStopDelay]; }
                 break;
         }
 

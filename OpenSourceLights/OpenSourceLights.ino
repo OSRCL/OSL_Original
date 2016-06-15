@@ -50,7 +50,7 @@
 // ====================================================================================================================================================>
     // Useful names 
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        const int NA                   =    -1;                 // For each of the 8 states the light can have the following settings: On, Off, NA, Blink, FastBlink, or Dim. On/Off are already defined above
+        const int NA                   =    -1;                 // For each of the 8 states the light can have the following settings: On, Off, NA, Blink, FastBlink, or Dim. On/Off are defined below
         const int BLINK                =    -2;                 // These give us numerical values to these names which makes coding easier, we can just type in the name instead of the number. 
         const int FASTBLINK            =    -3;
         const int SOFTBLINK            =    -4;
@@ -80,6 +80,7 @@
         boolean Braking                = false;                 // Are we braking            
         boolean Decelerating           = false;                 // Are we sharply decelerating 
         boolean Accelerating           = true;                  // Are we sharply accelerating
+        boolean StoppedLongTime        = false;                 // Have we been stopped for a long time (actual length of time set on the UserConfig tab - LongStopTime_mS)
 
         typedef char DRIVEMODES; 
         #define UNKNOWN      0
@@ -149,9 +150,9 @@
                                                                 // Note that the actual schemes are zero-based (0 to NumSchemes-1) but don't worry about that,
                                                                 // the code takes care of it. 
         #define NumLights                    8                  // The number of light outputs available on the board
-        #define NumStates                    13                 // There are 12 possible states a light can be in: 
+        #define NumStates                    14                 // There are 14 possible states a light can be in: 
                                                                 // - Mode 1, Mode 2, Mode 3, Mode 4, Mode 5 (all from Channel3 switch), 
-                                                                // - Forward, Reverse, Stop, Brake (from Throttle Channel), 
+                                                                // - Forward, Reverse, Stop, Stop Delay, Brake (from Throttle Channel), 
                                                                 // - Right Turn, Left Turn (from Turn Channel)
                                                                 // - Accelerating - 
                                                                 // - Decelerating - special state that occurs on heavy deceleration (from Throttle Channel)
@@ -163,11 +164,12 @@
         const byte StateFwd            =     5;                 // Moving forward
         const byte StateRev            =     6;                 // Moving backwards
         const byte StateStop           =     7;                 // Stopped
-        const byte StateBrake          =     8;                 // Braking
-        const byte StateRT             =     9;                 // Right turn
-        const byte StateLT             =     10;                // Left turn
-        const byte StateAccel          =     11;                // Acceleration
-        const byte StateDecel          =     12;                // Deceleration
+        const byte StateStopDelay      =     8;                 // Stopped for a user-defined length of time
+        const byte StateBrake          =     9;                 // Braking
+        const byte StateRT             =     10;                // Right turn
+        const byte StateLT             =     11;                // Left turn
+        const byte StateAccel          =     12;                // Acceleration
+        const byte StateDecel          =     13;                // Deceleration
        
         int ActualDimLevel;                                     // We allow the user to enter a Dim level from 0-255. Actually, we do not want them using numbers 0 or 1. The ActualDimLevel corrects for this.
                                                                 // In practice, it is unlikely a user would want a dim level of 1 anyway, as it would be probably invisible. 
@@ -341,10 +343,10 @@ void loop()
     // Shifting Direction
     static int DriveFlag = NO;                                  // We start with movement allowed
     static unsigned long TransitionStart;                       // A marker which records the time when the shift transition begins
-    static unsigned long StopLength;                            // Counter to determine how long we have been commanding Stop
+    static unsigned long StopCMDLength;                         // Counter to determine how long we have been commanding Stop
 
-    // Turn signals
-    static unsigned long TimeStopped;                           // When did we stop - will be used to initiate a delay after stopping before turn signals can be used
+    // Stop time
+    static unsigned long TimeStopped;                           // When did we stop - will be used to initiate a delay after stopping before turn signals can be used, or when stop-delay light settings can take effect
 
     // Scheme change variables
     static int MaxTurn;                                         // This will end up being 90 percent of Turn Command, we consider this a full turn
@@ -385,10 +387,11 @@ void loop()
         
         currentMillis = millis();                               // Initializing some variables 
         TransitionStart = currentMillis;  
-        StopLength = currentMillis;  
+        StopCMDLength = currentMillis;  
         TimeStopped = currentMillis;
         TurnSignal_Enable = false;
-
+        StoppedLongTime = false;
+        
         canChangeScheme = false;    
         ChangeSchemeTimerFlag = false;
         ChangeSchemeMode = false;
@@ -575,28 +578,28 @@ void loop()
         // direction. 
         if (DriveModeCommand == STOP)
         {
-           if (DriveModeCommand_Previous == STOP)
-           {   // Check to see if we have been commanding stop long enough to change our DriveMode
-               // This length of time will be different depending on whether we are stopping from forward (longer) or from reverse (quite short)
-               if (DriveMode == FWD)
-               {
-                   if ((millis() - StopLength) >= TimeToStop_FWD_mS)
-                   {
-                       DriveMode = STOP;    // Throttle has been in the Stop position for TimeToStop_FWD_mS: we assume we are now really stopped. 
-                   }
-               }
-               else if (DriveMode == REV)
-               {
-                   if ((millis() - StopLength) >= TimeToStop_REV_mS)
-                   {
-                       DriveMode = STOP;    // Throttle has been in the Stop position for TimeToStop_REV_mS: we assume we are now really stopped. 
-                   }
-               }
-           }
-           else
-           {   //Previously we were commanding something else, so start the stop time counter
-               StopLength = millis();
-           }
+            if (DriveModeCommand_Previous == STOP)
+            {    // Check to see if we have been commanding stop long enough to change our DriveMode
+                // This length of time will be different depending on whether we are stopping from forward (longer) or from reverse (quite short)
+                if (DriveMode == FWD)
+                {
+                    if ((millis() - StopCMDLength) >= TimeToStop_FWD_mS)
+                    {
+                        DriveMode = STOP;    // Throttle has been in the Stop position for TimeToStop_FWD_mS: we assume we are now really stopped. 
+                    }
+                }
+                else if (DriveMode == REV)
+                {
+                    if ((millis() - StopCMDLength) >= TimeToStop_REV_mS)
+                    {
+                        DriveMode = STOP;    // Throttle has been in the Stop position for TimeToStop_REV_mS: we assume we are now really stopped. 
+                    }
+                }
+            }
+            else
+            {   //Previously we were commanding something else, so start the stop time counter
+                StopCMDLength = millis();
+            }
         }
         else
         {
@@ -604,6 +607,8 @@ void loop()
             TurnSignal_Enable = false;
             // Also reset the canChangeScheme flag, we don't want to enter ChangeScheme mode while moving forward
             canChangeScheme = false;
+            // And finally, reset the StoppedLongTime flag because we are no longer stopped
+            StoppedLongTime = false;
         }        
 
         // Turn signal timer - start the timer when the car first comes to a stop. 
@@ -624,8 +629,14 @@ void loop()
                 // After this much time has passed being stopped, we also allow the user to enter ChangeScheme mode if they want
                 canChangeScheme = true;
             }        
+
+            // Check to see if we have been stopped a "long" time, this will enable stop-delay effects
+            if ((millis() - TimeStopped) >= LongStopTime_mS)
+            {
+                StoppedLongTime = true;
+            }
             
-            // If we are stopped and have been stopped, we are also no longer decelerating, so reset this flag.
+            // If we are stopped and have been stopped, we are also no longer decelerating, so reset these flags.
             Decelerating = false;
             Accelerating = false;
             canBackfire = false;
