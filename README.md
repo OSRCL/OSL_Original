@@ -1,5 +1,5 @@
 # Open Source RC Lights
-## aka, "OSL"
+(aka, "OSL")
 
 OSL is an Arduino-based, open source project for controlling lights in RC cars and trucks. It uses an ATmega 328 as the processors and has 8 light outputs. All the components on the board are through-hole which makes it easy to assemble and solder. 
 
