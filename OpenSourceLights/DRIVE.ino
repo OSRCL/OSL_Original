@@ -26,7 +26,7 @@ boolean ReturnBrakeFlag(int DriveModePrev, int DriveModeCMD)
     }
 
     // If we have DragBrake = true, then the Brake state will also be active anytime the throttle stick is near center. 
-    if ((DragBrake == true) && (DriveModeCMD != FWD) && (DriveModeCMD != REV))
+    if ((DragBrake == true) && (DriveModePrev != STOP) && (DriveModeCMD != FWD) && (DriveModeCMD != REV))
     {
         Brake = true;
     }
