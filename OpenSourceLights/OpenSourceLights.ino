@@ -756,6 +756,20 @@ void loop()
                     DriveFlag = YES;
                 }
             }
+
+            // Should we leave the turn signal on even though we're now moving backwards? 
+            // DriveFlag = YES                  One of the two checks above returned true (A, or B & C) - meaning, we are moving in reverse
+            // TurnCommand != 0                 The wheels must be turned   
+            // TurnFromStartContinue_mS > 0     User must have enabled this setting
+            // BlinkTurnOnlyAtStop = true       This must be true, otherwise we just allow blinking all the time, so none of this is necessary
+            // TurnSignal_Enable = true         This means the car has already been stopped for some length of time, and is not just coasting (set by TurnSignalDelay_mS)
+            if (DriveFlag == YES && TurnCommand != 0 && TurnFromStartContinue_mS > 0 && BlinkTurnOnlyAtStop && TurnSignal_Enable) 
+            {
+                // In this case we have just begun starting to move, and our wheels are turned at the same time. 
+                // We will keep the turn signals on for a brief period after starting, as set by TurnFromStartContinue_mS
+                TurnSignalOverride = TurnCommand;                                 // TurnSignalOverride saves the turn direction, and will act as a fake turn command in the SetLights function
+                timer.setTimeout(TurnFromStartContinue_mS, ClearBlinkerOverride); // ClearBlinkerOverride will set TurnSignalOverride back to 0 when the timer is up. 
+            }
         }
 
     // WE NOW HAVE OUR ACTUAL DRIVE MODE - SET THE LIGHTS ACCORDINGLY
