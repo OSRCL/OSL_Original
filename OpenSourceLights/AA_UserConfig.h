@@ -1,13 +1,23 @@
-// This file lists the variables configurable by the user
+// THIS FILE HAS SETTINGS WHICH THE USER CAN BE CONFIGURE
 
-    #define NumSchemes  2                  // The number of lighting schemes allowed. Theoretically it can be anything up the memory limit. Defaults to 2. 
-                                           // If you add more Schemes on the "AA_LIGHT_SETUP" tab, you need to increase this number. 
+// NUMBER OF SCHEMES
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    #define NumSchemes  2                           // The number of lighting schemes allowed. Theoretically it can be anything up the memory limit. Defaults to 2. 
+                                                    // If you add more Schemes on the "AA_LIGHT_SETUP" tab, you need to increase this number. 
                                            
-// TWEAKS FOR YOUR LIGHTS
+// STATE SETTINGS
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    #define LongStopTime_mS          30000          // The Stop Delay state only occurs when the vehicle has been stopped for some length of time, which is set here. 
+                                                    // Recall that 1000 mS = 1 second (default value is 30 seconds)
+
+
+// LIGHT SETTINGS - DIM LEVEL
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define DimLevel                    20          // Number from 0-255, with 0 being off, 255 being full on. Often numbers much greater than half (128) are hard to distinguish from full on. 
                                                     // Experiment to get the number that makes your lights as dim as you want them. 
     
+// LIGHT SETTINGS - BLINKING
+// ------------------------------------------------------------------------------------------------------------------------------------------------>    
     #define BlinkInterval              600          // A value in milliseconds that sets the blink rate for blinking lights set to "BLINK" or "SOFTBLINK" (for example, turn signals). 1000 = 1 second
     #define FastBlinkInterval           15          // A value in milliseconds that sets the fast blink rate for lights set to "FASTBLINK"
 
@@ -15,6 +25,9 @@
     #define SoftBlinkFadeOutDelay        7          // step, and the delay can be different for fade in and out. Take for example a FadeInDelay of 5 mS. There are 20 steps to fade in, 
                                                     // so 20 * 5 = 100mS for the light to fade in. The total amount of time for the fade in + the fade out should not exceed BlinkInterval. 
 
+
+// LIGHT SETTINGS - TURN SIGNALS
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define BlinkTurnOnlyAtStop       true          // If you only want your turn signal blinkers to come on when the car is Stopped, set this to true. 
                                                     // Turn signals are cool, but they look silly when they start blinking every time you turn the steering wheel while driving. 
                                                     // For that reason, you will probably want to keep this "true"
@@ -32,13 +45,13 @@
                                                     // turn signal to continue blinking. If you don't want this effect to happen, set this to 0 (zero). 
     
 // DOUBLE TAP REVERSE
-// -------------------------------------------------------------------------------------------------------------------------------------------->
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define DoubleTapReverse          true          // Most ESCs require you to tap reverse twice before the car actually goes into reverse. 
                                                     // If yours is like this, set it to true. Most touring cars operate like this. 
                                                     // But if you can shift directly into reverse from forward, set this to false - this is typical of crawlers. 
                                                     
 // ACCELERATING AND DECELERATING
-// -------------------------------------------------------------------------------------------------------------------------------------------->
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define AccelPct                    35          // How much does the throttle have to increase (1-100 pct) to be considered a sharp acceleration.
                                                     // This will trigger the OvertakeTime timer set below, during which your lights will do whatever
                                                     // setting you put in the Accelerating column (BLINK or FASTBLINK makes sense, like they do in 
@@ -56,7 +69,7 @@
 
 
 // COASTING
-// -------------------------------------------------------------------------------------------------------------------------------------------->
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
     // If we didn't allow any time for the car to coast to a stop, there would be no need for braking, and your brake lights would never come on. However in real life, 
     // your car does coast even after you let off the 'gas'. During this time, opposite throttle commands are actually counted as a command to change direction, but instead
     // are counted as braking. Tweak the coast times here to match what you see in real life. They are in milliseconds. 
@@ -71,14 +84,14 @@
                                                     // NOTE: If you want your brakes to come on automatically whenever you are STOPPED, you should set that in the LIGHT_SETUP tab under the Stop column. 
 
 // SHIFTING TIME
-// -------------------------------------------------------------------------------------------------------------------------------------------->
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
     // How much of a pause is required before changing directions (from forward to reverse or from reverse to forward). 
     // For most ESCs this will be close to zero. 
     #define TimeToShift_mS             100          // The pause time in milliseconds that will be required before the vehicle is allowed to change direction
 
 
 // DEADBAND
-// -------------------------------------------------------------------------------------------------------------------------------------------->
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
     // This reduces the sensitivity around center stick. The numbers can be 0-100 but should be rather small, like 10. This prevents minor movements of your sticks when
     // stopped from  setting off your lights. 
     // Note: if you find you need to set these numbers to high values, what you probably need is to run through Radio Setup instead. 
