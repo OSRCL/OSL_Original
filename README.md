@@ -14,7 +14,7 @@ Some features:
   * All Settings/States/Schemes are set in the Arduino sketch, but are in tabular format and there is an example already included so it is easy to create your own. 
   * Code can be written in the Arduino IDE and flashed to the board with any of the common FTDI cables or adapters.
   * Compatible with both 5 and 6-volt RC systems, or the lights can be powered by a separate voltage source.
-  * Compatible with standard aftermarket RC LED lights sush as the [YeahRacing lights](http://www.rcmart.com/body-light-font-colorredblight-rcbfont-c-438_900.html). 
+  * Compatible with standard aftermarket RC LED lights sush as the **[YeahRacing lights](http://www.rcmart.com/body-light-font-colorredblight-rcbfont-c-438_900.html)**. 
 
 There are no pre-assembled boards available for sale at this time, but you can buy bare PCBs **[from OSH Park](https://oshpark.com/shared_projects/kmCzNipk)**. 
 
