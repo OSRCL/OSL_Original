@@ -27,14 +27,14 @@ void GetRxCommands()
 
 boolean CheckChannel3()
 {
-    Channel3Pulse = pulseIn(Channel3_Pin, HIGH, ServoTimeout);
+    Channel3Pulse = pulseIn(Channel3_Pin, HIGH, ServoTimeout * 2);
     if (Channel3Pulse == 0) { return false; }
     else { return true; }
 }
 
 boolean CheckSteeringChannel()
 {
-    TurnPulse = pulseIn(SteeringChannel_Pin, HIGH, ServoTimeout);
+    TurnPulse = pulseIn(SteeringChannel_Pin, HIGH, ServoTimeout * 2);
     if (TurnPulse == 0) { return false; }
     else { return true; }
 }    
