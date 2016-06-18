@@ -1,10 +1,10 @@
-// THIS FILE HAS SETTINGS WHICH THE USER CAN BE CONFIGURE
+// THIS FILE HAS SETTINGS WHICH THE USER CAN CONFIGURE
 
 // NUMBER OF SCHEMES
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    #define NumSchemes  2                           // The number of lighting schemes allowed. Theoretically it can be anything up the memory limit. Defaults to 2. 
-                                                    // If you add more Schemes on the "AA_LIGHT_SETUP" tab, you need to increase this number. 
-                                           
+    #define NumSchemes  2                           // The number of lighting schemes implemented. Theoretically it can be anything up the memory limit. Defaults to 2. 
+                                                    // MAKE SURE THIS NUMBER MATCHES THE NUMBER OF SCHEMES DEFINED IN AA_LIGHT_SETUP !!
+
 // STATE SETTINGS
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define LongStopTime_mS          30000          // The Stop Delay state only occurs when the vehicle has been stopped for some length of time, which is set here. 
