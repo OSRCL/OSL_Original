@@ -1,7 +1,7 @@
  /*
  * Open Source Lights   An Arduino-based program to control LED lights on RC vehicles. 
- * Version:             2.09
- * Last Updated:        6/18/2016
+ * Version:             2.10
+ * Last Updated:        6/05/2017
  * Copyright 2011       Luke Middleton
  *
  * For more information, see the RCGroups thread: 
