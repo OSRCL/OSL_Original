@@ -374,8 +374,8 @@ void FadeBlink(int WhatLight, boolean fadeUp, int mS)
 {
     unsigned int brightness=0xffff;
     float fbrightness;
-    int startLow = 275;
-
+    float LowLevel;
+    
     // Only certain lights can be faded (lights 1-6). We do a check here to make sure. 
     // If it is not an option on this pin, but the command was still issued, we instead turn it off. 
     if (Dimmable[WhatLight])
@@ -383,30 +383,39 @@ void FadeBlink(int WhatLight, boolean fadeUp, int mS)
         // This completely interrupts everything else while the fade is occuring, otherwise it looks too choppy and unrealistic. 
         // Downside, nothing else gets processed while this is happening. Even worse, if you have multiple lights set to FadeOff on the 
         // same state, they will go sequentially one-by-one, not all at the same time. This looks cool, but takes even more time. 
+        
+        if (fadeUp) // fade from off (or DIM) up to full bright
+        {   
+            if (LightSettings[WhatLight][Channel3] == DIM) fbrightness = DimLevel<<8;   // Starting point is DIM
+            else fbrightness = 275.0;                                                   // Starting point is full OFF
 
-        if (fadeUp) // fade from off up to bright
-        {
-            fbrightness = startLow;
-            while (fbrightness < 65535.0) 
+            // Ramp up
+            while (fbrightness < 65536.0) 
             {
                 brightness = (unsigned int)fbrightness>>8;
                 analogWrite(LightPin[WhatLight],brightness);
                 fbrightness += (fbrightness / 3);
                 delay(mS);
             }
-            TurnOnLight(WhatLight);             // We should now be at full brightness
+            TurnOnLight(WhatLight);             // We are now at full brightness (full ON)
         }
-        else        // Fade from bright (or dim) down to off
+        else        // Fade from full bright down to off (or DIM)
         {
-            // Start at whatever level the light is already at
-            brightness = PWM_Step[WhatLight]*PWM_Step[WhatLight];
-            while (brightness > 255) 
-            {
-                analogWrite(LightPin[WhatLight],brightness>>8);
-                brightness -= brightness>>2;
+            // Start at whatever level the light is already at, but should be full on
+            fbrightness = pow((float)PWM_Step[WhatLight],2); 
+            
+            if (LightSettings[WhatLight][Channel3] == DIM) LowLevel = DimLevel<<8;  // End point is DIM 
+            else LowLevel = 256.0;                                                  // End point is full OFF
+
+            while (fbrightness > LowLevel) 
+            {   
+                brightness = (unsigned int)fbrightness>>8;
+                analogWrite(LightPin[WhatLight],brightness);
+                PWM_Step[WhatLight] = brightness;
+                fbrightness -= (fbrightness / 5);
                 delay(mS);
             }
-            TurnOffLight(WhatLight);    // TurnOffLight will also reset the PWM_Step 
+            if (LightSettings[WhatLight][Channel3] != DIM) TurnOffLight(WhatLight);    // Turn it completely off
         }
     }
     else
@@ -481,8 +490,13 @@ void ClearBlinkerOverride(void)
 // BLINKLIGHT - This blinks a light
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 void BlinkLight(int WhatLight)
-{
-    Blinker ? TurnOnLight(WhatLight) : TurnOffLight(WhatLight);
+{   
+    if (Blinker) TurnOnLight(WhatLight);
+    else
+    {
+        if (LightSettings[WhatLight][Channel3] == DIM) DimLight(WhatLight);
+        else TurnOffLight(WhatLight);
+    }
 }
 
 
