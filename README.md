@@ -21,3 +21,21 @@ There are no pre-assembled boards available for sale at this time, but you can b
 A bill of materials is included in the Hardware folder. 
 
 Please **[see the RCGroups thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)** for more information. 
+
+
+## How to Use with Arduino
+Download the source files. You can obtain them from the first post of the [RCGroups thread](http://www.rcgroups.com/forums/showthread.php?t=1539753) or click the green "Clone or Download" button at the top of this page, then select "Download ZIP." Unzip the files, then:
+
+1. Put the folder named "OpenSourceLights" into your Arduino "Sketches" folder. This may be a location you specified or it may be the default location that Arduino chose when you installed the IDE. If you are unsure where Arduino thinks your Sketches folder is:
+- Open the Arduino IDE
+- Go to File -> Preferences
+- At the top of the popup screen that appears, look at the path under the heading "Sketchbook location". This shows you where your Sketches folder is. 
+
+2. Also put the folder named "libraries" into your Sketches folder. There may already be a libraries folder there, if so just overwrite it (overwriting in this case will simply add the new libraries).
+
+3. Compile and upload
+- Open the Arduino IDE
+- Make sure you have the correct board selected. Go to Tools -> Board -> "Arduino Duemilanove or Diecimila"
+- Make sure you have the correct processor selected. Go to Tools -> Processor -> "ATmega328"
+- Make sure you have the correct com port selected (the one hooked up to your board) - this is in Tools -> Serial Port
+- Click the "Upload" button to send the code to the board (this is the icon with the arrow facing right)
