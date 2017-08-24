@@ -11,6 +11,10 @@
  * https://github.com/OSRCL/OSL_Original
  * 
  *
+ * To compile select               Tools -> Board     -> Arduino Duemilanove or Diecimila
+ * Also select correct processor   Tools -> Processor -> ATmega328
+ *
+ *
  * CREDITS!    CREDITS!    CREDITS!
  *----------------------------------------------------------------------------------------------------------------------------------------------------->
  * Several people have contributed code to this project
