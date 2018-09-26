@@ -1,7 +1,7 @@
  /*
  * Open Source Lights   An Arduino-based program to control LED lights on RC vehicles. 
- * Version:             2.10
- * Last Updated:        6/05/2017
+ * Version:             2.20
+ * Last Updated:        9/23/2018
  * Copyright 2011       Luke Middleton
  *
  * For more information, see the RCGroups thread: 
@@ -632,8 +632,8 @@ void loop()
         }
         else if ((DriveMode == STOP) && (DriveMode_Previous == STOP))
         {   // We have been stopped already. Check to see if the turn signal signal timer is up - if so, we will permit a turn command (while still stopped)
-            // to engage the turn signal lighs. This is only if the user has specified BlinkTurnOnlyAtStop = true. 
-            if ((millis() - TimeStopped) >= TurnSignalDelay_mS)
+            // to engage the turn signal lights. This is only if the user has specified BlinkTurnOnlyAtStop = true. 
+            if (TurnSignalDelay_mS > 0 && ((millis() - TimeStopped) >= TurnSignalDelay_mS))
             {
                 TurnSignal_Enable = true;
                 // After this much time has passed being stopped, we also allow the user to enter ChangeScheme mode if they want

@@ -31,8 +31,10 @@
     #define BlinkTurnOnlyAtStop       true          // If you only want your turn signal blinkers to come on when the car is Stopped, set this to true. 
                                                     // Turn signals are cool, but they look silly when they start blinking every time you turn the steering wheel while driving. 
                                                     // For that reason, you will probably want to keep this "true"
-                                                    // NOTE: This only applies to a "BLINK" setting in the "RightTurn" or "LeftTurn" states. 
-                                                    // Any setting other than "BLINK" in the "RightTurn" or "LeftTurn" column will NOT be affected. 
+                                                    // NOTE: This only applies to a BLINK or SOFTBLINK setting in the "RightTurn" or "LeftTurn" states. 
+                                                    // Any setting other than BLINK or SOFTBLINK in the "RightTurn" or "LeftTurn" column will NOT be affected. 
+    #define AllTurnSettingsMatch      false         // Set to true to restrict all other turn settings (not just BLINK and SOFTBLINK) to the same conditions imposed by BlinkTurnOnlyAtStop
+
     #define TurnSignalDelay_mS        3000          // If BlinkTurnOnlyAtStop = true, this setting further refines when the turn signals can come on. Instead of coming on right when the 
                                                     // car reaches a stop, you can set a delay in milliseconds (1000 mS = 1 second) before they will be enabled. This way, if you come 
                                                     // to a stop while the wheels are turned, the turn signals will not come on instantly, which looks very strange. 

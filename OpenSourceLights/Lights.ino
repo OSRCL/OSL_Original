@@ -88,7 +88,7 @@ void SetLights(int DriveMode)
 
         // Next - does this light come on during turns? 
         // --------------------------------------------------------------------------------------------------->>        
-        if (TurnCommand > 0)    // Right Turn
+        if (TurnCommand > 0 || TurnSignalOverride > 0)    // Right Turn
         {
             // If we have a blink command on right turn, and if we have the BlinkTurnOnlyAtStop = true, 
             // then we only appy the turn signal if we are stopped AND if the turn signal delay has expired (TurnSignal_Enable = true)
@@ -96,7 +96,12 @@ void SetLights(int DriveMode)
             {
                 if ((DriveMode == STOP) && (TurnSignal_Enable == true)) { SaveSetting[j] = LightSettings[j][StateRT]; }
             }
-            // Otherwise if it is any other setting, or if the BlinkTurnOnlyAtStop flag is not true, then we apply the setting normally
+            // Same as above except for all other settings under turn
+            else if (LightSettings[j][StateRT] != NA && AllTurnSettingsMatch == true )
+            {
+                if ((DriveMode == STOP) && (TurnSignal_Enable == true)) { SaveSetting[j] = LightSettings[j][StateRT]; }
+            }
+            // Otherwise if it is any other setting, or if the BlinkTurnOnlyAtStop flag and the AllTurnSettingsMatch are not true, then we apply the setting normally
             else if (LightSettings[j][StateRT] != NA) { SaveSetting[j] = LightSettings[j][StateRT]; }
         }
         if (TurnSignalOverride > 0) // Artificial Right Turn
@@ -104,6 +109,8 @@ void SetLights(int DriveMode)
             // In this case we want to artificially create a turn signal even though the wheel may or may not be turned.
             // We ignore driving state or TurnSignal_Enable state 
             if (LightSettings[j][StateRT] == BLINK || LightSettings[j][StateRT] == SOFTBLINK) { SaveSetting[j] = LightSettings[j][StateRT]; }
+            // We may also want to artificially create any setting assigned to the turn state
+            else if (AllTurnSettingsMatch)                                                    { SaveSetting[j] = LightSettings[j][StateRT]; }
         }
 
         if (TurnCommand < 0 || TurnSignalOverride < 0)    // Left Turn
@@ -114,7 +121,12 @@ void SetLights(int DriveMode)
             {
                 if ((DriveMode == STOP) && (TurnSignal_Enable == true)) { SaveSetting[j] = LightSettings[j][StateLT]; }
             }
-            // Otherwise if it is any other setting, or if the BlinkTurnOnlyAtStop flag is not true, then we apply the setting normally
+            // Same as above except for all other settings under turn
+            else if (LightSettings[j][StateRT] != NA && AllTurnSettingsMatch == true )
+            {
+                if ((DriveMode == STOP) && (TurnSignal_Enable == true)) { SaveSetting[j] = LightSettings[j][StateLT]; }
+            }
+            // Otherwise if it is any other setting, or if the BlinkTurnOnlyAtStop flag and the AllTurnSettingsMatch are not true, then we apply the setting normally
             else if (LightSettings[j][StateLT] != NA) { SaveSetting[j] = LightSettings[j][StateLT]; }
         }
         if (TurnSignalOverride < 0) // Artificial Left Turn
@@ -122,6 +134,8 @@ void SetLights(int DriveMode)
             // In this case we want to artificially create a turn signal even though the wheel may or may not be turned.
             // We ignore driving state or TurnSignal_Enable state 
             if (LightSettings[j][StateLT] == BLINK || LightSettings[j][StateLT] == SOFTBLINK) { SaveSetting[j] = LightSettings[j][StateLT]; }
+            // We may also want to artificially create any setting assigned to the turn state
+            else if (AllTurnSettingsMatch)                                                    { SaveSetting[j] = LightSettings[j][StateLT]; }
         }
    
         // Light "j" now has a single setting = SaveSetting[j]
