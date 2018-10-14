@@ -122,7 +122,7 @@ void SetLights(int DriveMode)
                 if ((DriveMode == STOP) && (TurnSignal_Enable == true)) { SaveSetting[j] = LightSettings[j][StateLT]; }
             }
             // Same as above except for all other settings under turn
-            else if (LightSettings[j][StateRT] != NA && AllTurnSettingsMatch == true )
+            else if (LightSettings[j][StateLT] != NA && AllTurnSettingsMatch == true )
             {
                 if ((DriveMode == STOP) && (TurnSignal_Enable == true)) { SaveSetting[j] = LightSettings[j][StateLT]; }
             }
