@@ -60,6 +60,13 @@ void ToggleAllLights()
     Status = !Status;
 }
 
+void ToggleSelectLight(uint8_t NumLight)
+{
+    static boolean Status; 
+    Status ? TurnOnLight(NumLight-1) : TurnOffLight(NumLight-1);
+    Status = !Status;
+}
+
 void GreenBlinkSlow(int HowMany)
 {
     for (int i=1; i<=HowMany; i++)

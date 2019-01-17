@@ -2,7 +2,7 @@
 
 // NUMBER OF SCHEMES
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    #define NumSchemes  2                           // The number of lighting schemes implemented. Theoretically it can be anything up the memory limit. Defaults to 2. 
+    #define NumSchemes                   2          // The number of lighting schemes implemented. Theoretically it can be anything up the memory limit. Defaults to 2. 
                                                     // MAKE SURE THIS NUMBER MATCHES THE NUMBER OF SCHEMES DEFINED IN AA_LIGHT_SETUP !!
 
 // STATE SETTINGS
@@ -103,7 +103,7 @@
 
 // DEBUGGING
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    #define DEBUG                     false         // Set this to true to receive debugging messages out the serial port. NOTE: This will make the program less responsive, 
+    #define DEBUG                     true          // Set this to true to receive debugging messages out the serial port. NOTE: This will make the program less responsive, 
                                                     // so turn it off when you are done troubleshooting. 
     #define LED_DEBUG                 true          // If this is set to true, the Green LED on the board will be on whenever the car is moving forward, 
                                                     // the Red LED will come on whenever the car is moving in reverse, 
