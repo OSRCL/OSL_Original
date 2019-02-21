@@ -101,6 +101,15 @@
     #define TurnDeadband                15          // Same thing, but for steering channel. 
 
 
+// RC Input Smoothing
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    // Enable if you experience glitching on any channel. Most users do not need it. 
+    #define SmoothThrottle            false
+    #define SmoothSteering            false
+    #define SmoothChannel3            false
+    #define smoothingStrength         3             // Number from 0-4. Change this value to set strength of smoothing. Use minimum acceptable value.
+
+
 // DEBUGGING
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define DEBUG                     true          // Set this to true to receive debugging messages out the serial port. NOTE: This will make the program less responsive, 
