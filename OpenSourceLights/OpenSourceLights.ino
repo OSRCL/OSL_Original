@@ -1,7 +1,7 @@
  /*
  * Open Source Lights   An Arduino-based program to control LED lights on RC vehicles. 
- * Version:             2.20
- * Last Updated:        10/14/2018
+ * Version:             2.21
+ * Last Updated:        02/20/2019
  * Copyright 2011       Luke Middleton
  *
  * For more information, see the RCGroups thread: 
@@ -19,6 +19,9 @@
  *----------------------------------------------------------------------------------------------------------------------------------------------------->
  * Several people have contributed code to this project
  *
+ * Wombii               RCGroups username Wombii 
+ *                          February 2019 - submitted code to average (smooth) incoming RC commands for those experiencing glitching. It can be enabled for 
+ *                          any channel on the AA_UserConfig tab. See: https://www.rcgroups.com/forums/showthread.php?1539753-Open-Source-Lights-Arduino-based-RC-Light-Controller/page57#post41222591
  * Richard & Nick       RCGroups username "Rbhoogenboom" and "NickSegers"
  *                          June 2016 - created an Excel file to simplify the light setups. It will automatically generate the entire AA_LIGHT_SETUP file. 
  *                          Download from the first post of the thread linked above. 
