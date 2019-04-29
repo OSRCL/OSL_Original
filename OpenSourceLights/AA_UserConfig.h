@@ -122,6 +122,9 @@
                                                     // the Green LED will blink quickly if you are turning right.
                                                     // You can use these to verify the board is working correctly without having any lights connected.
                                                     // LED_DEBUG does not affect the performance of the circuit, so you can leave it on.                                                  
+    #define BLINK_LIGHTS_RX_LOST      true          // If true, all eight LED outputs will blink rapidly when the radio signal has been lost. 
+                                                    // If set to false, only the onboard Red and Green LEDs will blink when the radio signal has been lost
+
 // SERIAL
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define BaudRate                 38400          // Set baud rate here if you know what you're doing and don't like the default value

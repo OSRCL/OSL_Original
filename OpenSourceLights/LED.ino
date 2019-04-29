@@ -49,11 +49,15 @@ void ToggleAllLights()
     Status ? RedLedOn() : RedLedOff();
     Status ? GreenLedOff() : GreenLedOn();
 
-    // Flip flop every other external light
-    for (int j=0; j<NumLights; j += 2)
-    {    
-        Status ? TurnOnLight(j) : TurnOffLight(j);
-        Status ? TurnOffLight(j+1) : TurnOnLight(j+1);
+    // Blink the eight outputs, but only if the user wants it
+    if (BLINK_LIGHTS_RX_LOST)
+    {
+        // Flip flop every other external light
+        for (int j=0; j<NumLights; j += 2)
+        {    
+            Status ? TurnOnLight(j) : TurnOffLight(j);
+            Status ? TurnOffLight(j+1) : TurnOnLight(j+1);
+        }
     }
     
     // Flop the flip
