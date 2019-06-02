@@ -757,6 +757,12 @@ void loop()
                 }
             }
         }
+        else if (DriveModeCommand == FWD && DriveMode_Previous == REV && TimeToShift_mS == 0)
+        {
+            DriveMode = FWD;
+            DriveFlag = YES;
+            ReverseTaps = 0;
+        }
     
         // COMMAND REVERSE
         // -------------------------------------------------------------------------------------------------------------------------------------------->           
@@ -795,6 +801,12 @@ void loop()
                 timer.setTimeout(TurnFromStartContinue_mS, ClearBlinkerOverride); // ClearBlinkerOverride will set TurnSignalOverride back to 0 when the timer is up. 
             }
         }
+        else if (DriveModeCommand == REV && DriveMode_Previous == FWD && TimeToShift_mS == 0 && DoubleTapReverse == false)
+        {
+            DriveMode = REV;
+            DriveFlag = YES;
+            ReverseTaps = 0;
+        }        
 
     // WE NOW HAVE OUR ACTUAL DRIVE MODE - SET THE LIGHTS ACCORDINGLY
     // ------------------------------------------------------------------------------------------------------------------------------------------------>    
