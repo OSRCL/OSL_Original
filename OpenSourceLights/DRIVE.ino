@@ -17,12 +17,12 @@ boolean ReturnBrakeFlag(int DriveModePrev, int DriveModeCMD)
     // Change of direction from forwad to reverse
     if (DriveModePrev == FWD && DriveModeCMD == REV)
     {
-        Brake = true;
+        if (TimeToShift_mS > 0 || DoubleTapReverse == true) Brake = true;
     }
     // Change of direction from reverse to forward
     if (DriveModePrev == REV && DriveModeCMD == FWD)
     {
-        Brake = true;
+        if (TimeToShift_mS > 0) Brake = true;
     }
 
     // If we have DragBrake = true, then the Brake state will also be active anytime the throttle stick is near center. 
