@@ -187,7 +187,7 @@ int GetChannel3Command()
             if      (Channel3Command == Pos1) Channel3Command = Pos5;
             else if (Channel3Command == Pos2) Channel3Command = Pos4;
             else if (Channel3Command == Pos4) Channel3Command = Pos2;
-            else if (Channel3Command == Pos1) Channel3Command = Pos1;
+            else if (Channel3Command == Pos5) Channel3Command = Pos1;
         }
 
     }
