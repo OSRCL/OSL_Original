@@ -1,10 +1,10 @@
-void GetRxCommands()
+
+// This update makes sure every loop is as fast as possible because we only read one channel per loop - Wombii
+// Loop speed gain is up to 2-3x
+void GetRxCommands() 
 {
     static int LastThrottleCommand;
-    
-    // We always check the Throttle channel
-    ThrottleCommand = GetThrottleCommand();
-    
+
     while(Failsafe)
     {
         if (DEBUG) Serial.println(F("RX Disconnected!"));
@@ -13,13 +13,25 @@ void GetRxCommands()
         GetThrottleCommand();
     }    
 
-    // But to save time, we only check the Steering and Channel 3 channels 
-    // if they were detected at startup. Otherwise we ignore them. 
-    if (SteeringChannelPresent) { TurnCommand = GetTurnCommand(); }
-    else                        { TurnCommand = 0;                }    // We set Turn to nothing if not being used
-
-    if (Channel3Present)        { Channel3 = GetChannel3Command();}
-    else                        { Channel3 = Pos1;                }    // We set Channel 3 to Position 1 if not being used
+    byte channelSelector;
+    channelSelector = runCount % 4;
+    switch (channelSelector)
+    {
+        case 0:
+            ThrottleCommand = GetThrottleCommand();
+            break;
+        case 1:
+            if (SteeringChannelPresent) { TurnCommand = GetTurnCommand(); }
+            else                        { TurnCommand = 0;                }    // We set Turn to nothing if not being used
+            break;
+        case 2:
+            ThrottleCommand = GetThrottleCommand();
+            break;
+        case 3:
+            if (Channel3Present)        { Channel3 = GetChannel3Command();}
+            else                        { Channel3 = Pos1;                }     // We set Channel 3 to Position 1 if not being used
+            break;
+    }
 }
 
 
