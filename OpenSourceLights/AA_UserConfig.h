@@ -130,5 +130,18 @@
     #define BaudRate                 38400          // Set baud rate here if you know what you're doing and don't like the default value
 
                                                     
-                                                    
+// NEW LIGHT FUNCTIONS - Wombii
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    // Calculate loopsPerCycle: each loop is probably 5-20ms depending on radio, so 50 *20ms = 1 second.
+    const byte blinkLoopsPerCycle       = 40;
+    const byte blinkLoopsOn             = 20;
+    
+    const byte softblinkLoopsPerCycle   = 100;
+    const byte softblinkLoopsOn         = 40;
+    
+    const byte fastblinkLoopsPerCycle   = 8;
+    const byte fastblinkLoopsOn         = 3;
+    
+      
+
 

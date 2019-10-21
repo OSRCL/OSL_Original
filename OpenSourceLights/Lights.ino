@@ -201,42 +201,378 @@ void DumpLightSchemeToSerial(int WhatScheme)
 
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
-// SETLIGHT - This sets an individual light to a specific setting
+// SETLIGHT - This sets an individual light to a specific setting - Wombii modified
+// FADEDISABLED:'0' FADEQUICK:'1' FADEUP:'2' FADEDOWN:'3' FADEBOTH:'4' FADEXENON:'5'
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 void SetLight(int WhatLight, int WhatSetting)
 { 
+  byte WantedLightState = 0;
+  byte WantedLightValue = 0;
+  byte WantedFade = '0';
+  byte activeLightValue = 0;
+
+  static byte pinIsFlashing[NumLights] = {0,0,0,0,0,0,0,0}; //Helper to reset the phase to make sure we start a flash session ON with no delay
+
+  
+
+  //if (WhatLight == 0) Serial.print('\t');if (WhatLight == 0) Serial.println(WhatSetting);
     switch (WhatSetting)
     {
         case ON:
-            TurnOnLight(WhatLight);
+            //TurnOnLight(WhatLight);
+            WantedLightState = 1;
+            WantedLightValue = 255;
+            WantedFade = '0';
+            pinIsFlashing[WhatLight] = 0;
             break;
+            
         case OFF:
-            TurnOffLight(WhatLight);
+            //TurnOffLight(WhatLight);
+            WantedLightState = 0;
+            WantedLightValue = 0;
+            WantedFade = '0';
+            pinIsFlashing[WhatLight] = 0;
             break;
+            
         case BLINK:
-            BlinkLight(WhatLight);
+            //BlinkLight(WhatLight);
+            if (pinIsFlashing[WhatLight] == 0)  specialTimingArray[0][1] = 255;
+            WantedLightState = flashingFunctionStartActiveSimple(0,specialTimingArray[0]);
+            WantedLightValue = WantedLightState*255;
+            WantedFade = '0';
+            if (LightSettings[WhatLight][Channel3] == DIM)
+            {
+              if(WantedLightState == 0)
+                WantedLightValue = ActualDimLevel;
+            }
+            pinIsFlashing[WhatLight] = 1;
             break;
-        case SOFTBLINK:
-            SoftBlinkLight(WhatLight);
+            
+        case SOFTBLINK: 
+            //SoftBlinkLight(WhatLight);
+            if (pinIsFlashing[WhatLight] == 0)  specialTimingArray[1][1] = 255;             //If new flash session, reset phase
+            WantedLightState = flashingFunctionStartActiveSimple(1,specialTimingArray[1]);
+            WantedLightValue = WantedLightState*255;
+            WantedFade = '4';
+            if (LightSettings[WhatLight][Channel3] == DIM)
+            {
+              if(WantedLightState == 0)
+                WantedLightValue = ActualDimLevel;
+            }
+            pinIsFlashing[WhatLight] = 1;                                                   //Currently in a flashing session, leave phase alone
             break;
+            
         case FASTBLINK:
-            FastBlinkLight(WhatLight);
+            //FastBlinkLight(WhatLight);
+            if (pinIsFlashing[WhatLight] == 0)  specialTimingArray[2][1] = 255;
+            WantedLightState = flashingFunctionStartActiveSimple(2,specialTimingArray[2]);
+            WantedLightValue = WantedLightState*255;
+            WantedFade = '0';
+            if (LightSettings[WhatLight][Channel3] == DIM)
+            {
+              if(WantedLightState == 0)
+                WantedLightValue = ActualDimLevel;
+            }
+            pinIsFlashing[WhatLight] = 1;
             break;
+            
         case DIM:
-            DimLight(WhatLight);
+            //DimLight(WhatLight);
+            WantedLightValue = ActualDimLevel;
+            WantedFade = '0';
+            pinIsFlashing[WhatLight] = 0;
             break;
-        case BACKFIRE:
+            
+        case BACKFIRE: //Unchanged
             LightBackfire(WhatLight);
-            break;            
+            pinIsFlashing[WhatLight] = 0;
+            break;  
+                      
         case XENON:
-            TurnOnXENONLight(WhatLight);
-            break;            
+            //TurnOnXENONLight(WhatLight);
+            WantedLightState = 1;
+            WantedLightValue = 255;
+            WantedFade = '5';
+            pinIsFlashing[WhatLight] = 0;
+            break;  
+                      
         case FADEOFF:
-            FadeOffLight(WhatLight);
+            //FadeOffLight(WhatLight);
+            WantedLightState = 0;
+            WantedLightValue = 0;
+            WantedFade = '3';
+            pinIsFlashing[WhatLight] = 0;
             break;            
     }
+
+    activeLightValue = SimpleFader(WhatLight, WantedFade, WantedLightValue);
+
+    //Actually write to the pins: (Could do all with analogWrite, but can do the digitalWrite parts to possibly save some time)
+    if (activeLightValue == 0)
+        digitalWrite(LightPin[WhatLight],LOW);
+    else if (activeLightValue == 255)
+        digitalWrite(LightPin[WhatLight],HIGH);
+    else
+        analogWrite(LightPin[WhatLight],activeLightValue);
+
+   //Can skip some steps by doing only
+   //analogWrite(LightPin[WhatLight],SimpleFader(WhatLight, WantedFade, WantedLightValue);
+   //but splitting it might be more readable.
+
+
 }
 
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------>  
+// FADING FUNCTION - Wombii
+// Deals with all fading. Tell it which pin, the wanted fade setting and the end target.
+// This can be used transparently by using fade setting '0' to have output directly match target value.
+// ------------------------------------------------------------------------------------------------------------------------------------------------>  
+byte SimpleFader(byte currentPin, byte wantedFadeSetting, byte wantedOutput)
+{
+    #define FADEDISABLED  '0'
+    #define FADEQUICK     '1'
+    #define FADEUP        '2'
+    #define FADEDOWN      '3'
+    #define FADEBOTH      '4'
+    #define FADEXENON     '5'
+    //5+1 and 5+2 is reserved for xenon stages. continue with fade sinewave at 8 when implemented.
+
+    static byte fadeValueArray[NumLights] = {0,0,0,0,0,0,0,0};      //Stores the current pwm value per pin
+    static byte previousFadeSetting[NumLights] = {0,0,0,0,0,0,0,0}; //Stores the previously used fade setting
+    
+    
+    const byte fadeSpeed = 10;        //User setting?
+    const byte fadeUpSlowSpeed = 10;  //User setting?
+    
+    int lastOutput = 0;               //The calculated output from the previous loop
+    int calculatedOutput = 0;         //The output after fading calculation
+    
+    byte fadeValue = 0;               //Temp value for calculations.
+      
+    fadeValue = fadeSpeed;            //The value to add or subtract from the pwm value
+
+    lastOutput = fadeValueArray[currentPin];
+
+    byte fadeSetting = wantedFadeSetting;  
+
+    
+    //If I remember correctly, this helps the xenon sequencing work:
+      if (wantedOutput < lastOutput){
+        if(previousFadeSetting[currentPin] >= '5'){//Fixes xenon bug. 
+          fadeSetting = previousFadeSetting[currentPin]; //xenonFrame[currentPin][functionNumber];
+        }
+      }
+      else
+      {
+        fadeSetting = wantedFadeSetting;
+        if (previousFadeSetting[currentPin] < FADEXENON)
+          previousFadeSetting[currentPin] = wantedFadeSetting;
+      }
+    
+      
+    
+    switch (fadeSetting)
+    {
+      case FADEQUICK: //Fast bug less smooth fade (both up and down)
+      
+        previousFadeSetting[currentPin] = FADEQUICK;
+        if (wantedOutput > lastOutput){
+          calculatedOutput = min(lastOutput + 20, wantedOutput);}
+        else if (wantedOutput < lastOutput){                         //changed if to else if. untested!
+          calculatedOutput = max(lastOutput - 20, wantedOutput);}
+        else{
+          calculatedOutput = wantedOutput;}
+        break;
+
+      case FADEUP: //Fade when going up, no fade when going down.
+        previousFadeSetting[currentPin] = FADEUP;
+        if (wantedOutput > lastOutput)
+          calculatedOutput = min(lastOutput + fadeUpSlowSpeed, wantedOutput);
+        else
+          calculatedOutput = wantedOutput;
+        break;
+        
+      case FADEDOWN: //Fade when going down, no fade when going up. //Currently multiplies instead of subtracts, to get a better curve
+        previousFadeSetting[currentPin] = FADEDOWN;
+        if (wantedOutput < lastOutput)
+          calculatedOutput = max(0.9*lastOutput,wantedOutput);
+        else
+          calculatedOutput = wantedOutput;
+        break;
+
+      case FADEBOTH: // Fade both up and down //optimize here?
+        previousFadeSetting[currentPin] = FADEBOTH;
+        if (wantedOutput > lastOutput)
+          calculatedOutput = min(lastOutput + fadeUpSlowSpeed, wantedOutput);
+        else if (wantedOutput < lastOutput)
+          calculatedOutput = max(0.95*lastOutput,wantedOutput);// - fadeValue, wantedOutput);
+        else
+        {
+          calculatedOutput = wantedOutput;
+        }
+        break;
+
+    //The xenon fading works in 3 stages.
+    //1: Starting from off, spike the value to a medium-high value.
+    //2: Go quickly down to a low value.
+    //3: Slowly fade up to the wanted output value (probably full, but supports any value).
+    // When turning off, fade out.
+      case FADEXENON:
+      case FADEXENON+1:
+      case FADEXENON+2:
+
+
+
+        if (wantedOutput > lastOutput)
+        {
+          byte flashMax = wantedOutput - (wantedOutput>>2);
+          if ((previousFadeSetting[currentPin] == (FADEXENON + 0)) || (previousFadeSetting[currentPin] == 0))
+          {
+            calculatedOutput = lastOutput + (wantedOutput>>2);// = min(lastOutput + 30,flashMax); // last variable is the max value for the ignition flash// calculated is now 60 instead of 40 on run 2 if wanted is 40? FIX!
+            //calculatedOutput = min(calculatedOutput,wantedOutput); //fixed
+            if (calculatedOutput >= flashMax)
+            {
+              previousFadeSetting[currentPin]=FADEXENON + 1;
+              calculatedOutput = flashMax;
+            }
+          }
+          else if (previousFadeSetting[currentPin] == (FADEXENON + 1))
+          {
+            previousFadeSetting[currentPin]= FADEXENON + 2;
+            calculatedOutput = 1;
+          }
+          else if (previousFadeSetting[currentPin] == (FADEXENON + 2))
+          {
+            calculatedOutput = lastOutput + 1; //min(lastOutput + 1,wantedOutput);
+            if (calculatedOutput >= wantedOutput)
+            {
+              previousFadeSetting[currentPin] = FADEXENON;
+            }
+          }
+          
+          
+        }
+        else if (wantedOutput < lastOutput)
+        {
+          calculatedOutput = max(0.9*lastOutput,wantedOutput); //change to sine wave fade?
+          previousFadeSetting[currentPin] = FADEXENON;
+        }
+        else if (wantedOutput == lastOutput)
+        {
+          calculatedOutput = wantedOutput;
+          previousFadeSetting[currentPin] = FADEXENON;
+        }
+
+
+        break;
+/*
+      case FADESIN:
+        previousFadeSetting[currentPin] = FADESIN;
+
+        if (FadeOff_EffectDone[WhatLight] == 0)
+        {
+          const byte fadestart = 150;
+          const byte fadespeed = 15;
+          byte fadeHelper;
+          fadeHelper = SinBlinkLight5(WhatLight, fadestart, fadespeed);
+          if (fadeHelper == 0)
+          {
+            FadeOff_EffectDone[WhatLight] = 1;
+            SinBlinkHelper[WhatLight] = 0;
+          }
+          
+        }
+  
+        if fadesin is off
+          loopcounter%360 to phase
+        if fading up
+          sinblink pin phase/blinkspeed speed   brightness = constrain(127 + 128*sin(radians(blinkspeed*(currentangle + correctedphase)) ),0,255);
+        if (wantedOutput > lastOutput)
+          calculatedOutput = min(lastOutput + fadeUpSlowSpeed, wantedOutput);
+        else if (wantedOutput < lastOutput)
+          calculatedOutput = max(0.9*lastOutput,wantedOutput);// - fadeValue, wantedOutput);
+        else
+        {
+          calculatedOutput = wantedOutput;
+          //previousFadeSetting[currentPin] = 0;
+        }
+        break;
+*/
+      default:
+        calculatedOutput = wantedOutput;
+        previousFadeSetting[currentPin] = 0;
+        
+        break;
+
+    }
+
+  
+    
+    //if (currentPin == 0) Serial.print('\t');if (currentPin == 0) Serial.println(calculatedOutput);
+    //
+    
+    fadeValueArray[currentPin] = calculatedOutput;
+
+    return calculatedOutput;
+   
+   /*
+    if ( (fadeSetting == 's') )
+    {
+      //is it possible to do sine blink without detecting a start condition? am I doing that in my normal blinker?
+      // in light flasher with active start I'm resetting turn signal phase when it's off.
+      if wanted == last
+        reset phase
+      else if wanted > last
+        sinblink up (phase at 6 or 9)
+      else if wanted < last
+        sinblink down (phase at 12 or 3)
+        
+    }
+    */
+
+}
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------>  
+// FLASHING FUNCTION - Wombii
+// Deals with flashing. Makes a square wave with custom cycle time and time ON.
+// tempArray[4] would be of format: {ignored,phase,cycletime,timeOn}
+// ------------------------------------------------------------------------------------------------------------------------------------------------>  
+
+// For funcions that should go active immediately when turned on, like turn signals. moves the phase to the current runcount before flashing.
+//REQUIRES RESETTING OF PHASE
+// Visualization attempt: 
+//   Generate a square wave with amplitude 1. 
+//   numberOfFrames is the wavelength/period/cycle time. 
+//   numberOfActiveFrames is the High pulse width.
+//   phase is the delay before the rising edge.
+byte flashingFunctionStartActiveSimple ( byte functionNumber, byte tempArray[4]) // -Wombii
+{
+    byte phase = tempArray[1];
+    byte numberOfFrames = tempArray[2];
+    byte numberOfActiveFrames = tempArray[3];
+    byte flasherState = 0;
+
+    //set phase if this is a new blinking session to always start ON
+    if (phase == 255)
+    {
+        phase = numberOfFrames - (runCount % numberOfFrames );
+        specialTimingArray[functionNumber][1] = phase;
+    }
+  
+    //split up the infinite number line of loops into reasonable chunks.
+    //numberOfFrames = number of loops per light cycle
+    //numberOfActiveFrames = number of loops per light cycle that should be ON.
+    //phase = number of frames to wait before starting the ON part.
+    if ((runCount + phase)%numberOfFrames < numberOfActiveFrames )
+    {
+        flasherState = 1;
+    }
+
+    return flasherState;
+}
 
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
@@ -245,8 +581,8 @@ void SetLight(int WhatLight, int WhatSetting)
 void TurnOnLight(int WhatLight)
 {
     digitalWrite(LightPin[WhatLight], HIGH);
-    PWM_Step[WhatLight] = 255;
-    FadeOffReset(WhatLight);
+    //PWM_Step[WhatLight] = 255;
+    //FadeOffReset(WhatLight);
 }
 
 
@@ -257,12 +593,12 @@ void TurnOnLight(int WhatLight)
 void TurnOffLight(int WhatLight)
 {
     digitalWrite(LightPin[WhatLight], LOW);
-    PWM_Step[WhatLight] = 0;
-    XenonReset(WhatLight);
+    //PWM_Step[WhatLight] = 0;
+    //XenonReset(WhatLight);
 }
 
 
-
+/*
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // TURNONXENONLIGHT - Turns a light on with XENON effect
 // All credit for Xenon effects code goes to Sergio Pizzotti
@@ -439,7 +775,7 @@ void FadeBlink(int WhatLight, boolean fadeUp, int mS)
 }
 
     
-
+*/
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // LIGHTBACKFIRE - briefly and randomly light a led
@@ -499,7 +835,7 @@ void ClearBlinkerOverride(void)
     TurnSignalOverride = 0;
 }
 
-
+/*
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // BLINKLIGHT - This blinks a light
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
@@ -535,7 +871,7 @@ void SoftBlinkLight(int WhatLight)
         IndividualLightBlinker[WhatLight] = Blinker;
     }
 }
-
+*/
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // FASTBLINKLIGHT - This blinks a light at the fast rate
@@ -545,7 +881,7 @@ void FastBlinkLight(int WhatLight)
     FastBlinker ? TurnOnLight(WhatLight) : TurnOffLight(WhatLight);
 }
 
-
+/*
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // DIMLIGHT - This dims a light
@@ -573,7 +909,7 @@ void DimLight(int WhatLight)
     }
 }
 
-
+*/
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // FIXDIMLEVEL - Sets the ActualDimLevel and prevents the bug that occurs if the User strangely set DimLevel to less than 2 (unlikely)
@@ -591,6 +927,7 @@ void FixDimLevel()
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
 // SETLIGHTLEVEL - Set an individual light to a PWM level, save that in PWM_Step
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  
+/*
 void SetLightLevel(int WhatLight, int WhatLevel)
 {
     if (Dimmable[WhatLight])
@@ -599,7 +936,7 @@ void SetLightLevel(int WhatLight, int WhatLevel)
         PWM_Step[WhatLight] = WhatLevel;
     }
 } 
-
+*/
 
 
 // ------------------------------------------------------------------------------------------------------------------------------------------------>  

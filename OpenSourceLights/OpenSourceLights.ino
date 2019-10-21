@@ -19,6 +19,9 @@
  *----------------------------------------------------------------------------------------------------------------------------------------------------->
  * Several people have contributed code to this project
  *
+ * Wombii               RCGroups username Wombii
+ *                          October 2019 - light fades are now handled incrementally instaed of sequentially, which means thtat turn signals for exmaple
+ *                          no longer occur one after the other but at the same time. 
  * Wombii               RCGroups username Wombii 
  *                          February 2019 - submitted code to average (smooth) incoming RC commands for those experiencing glitching. It can be enabled for 
  *                          any channel on the AA_UserConfig tab. See: https://www.rcgroups.com/forums/showthread.php?1539753-Open-Source-Lights-Arduino-based-RC-Light-Controller/page57#post41222591
@@ -188,20 +191,23 @@
                                                                 // In practice, it is unlikely a user would want a dim level of 1 anyway, as it would be probably invisible. 
         int LightPin[NumLights] = {9,10,11,6,5,3,15,16};        // These are the Arduino pins to the 8 lights in order from left to right looking down on the top surface of the board. 
                                                                 // Note that the six Arduino analog pins can be referred to by numbers 14-19
-        int Dimmable[NumLights] = {1,1,1,1,1,1,0,0};            // This indicates which of these pins are capable of ouputting PWM, in order. PWM-capable pins on the Arduino are 3, 5, 6, 9, 10, 11
-                                                                // Dimmable must be true in order for the light to be capable of DIM, FADEOFF, or XENON settings
+        
         int LightSettings[NumLights][NumStates];                // An array to hold the settings for each state for each light. 
         int PriorLightSetting[NumLights][NumStates];            // Sometimes we want to temporarily change the setting for a light. We can store the prior setting here, and revert back to it when the temporary change is over.
+        
+        // With changes made by Wombii in October 2019 several of these settings are no longer needed
+//        int Dimmable[NumLights] = {1,1,1,1,1,1,0,0};            // This indicates which of these pins are capable of ouputting PWM, in order. PWM-capable pins on the Arduino are 3, 5, 6, 9, 10, 11
+                                                                // Dimmable must be true in order for the light to be capable of DIM, FADEOFF, or XENON settings
         int PWM_Step[NumLights] = {0,0,0,0,0,0,0,0};            // What is the current PWM value of each light. 
 
         // FadeOff effect
-        int FadeOff_EffectDone[NumLights] = {0,0,0,0,0,0,0,0};  // For each light, if = 1, then the Fade  effect is done, don't do it again until cleared (Fade_EffectDone = 0)
+//        int FadeOff_EffectDone[NumLights] = {0,0,0,0,0,0,0,0};  // For each light, if = 1, then the Fade  effect is done, don't do it again until cleared (Fade_EffectDone = 0)
 
-        // Xenon effect
+        // Xenon effect 
         int Xenon_EffectDone[NumLights] = {0,0,0,0,0,0,0,0};    // For each light, if = 1, then the Xenon effect is done, don't do it again until cleared (Xenon_EffectDone = 0)
-        int Xenon_Step[NumLights]       = {0,0,0,0,0,0,0,0};    // Save the current step variable for the Xenon light effect
-        unsigned long Xenon_millis[NumLights] = {0,0,0,0,0,0,0,0};
-        unsigned long Xenon_interval    = 25;                   // The interval between the various step of the Xenon effect
+//        int Xenon_Step[NumLights]       = {0,0,0,0,0,0,0,0};    // Save the current step variable for the Xenon light effect
+//        unsigned long Xenon_millis[NumLights] = {0,0,0,0,0,0,0,0};
+//        unsigned long Xenon_interval    = 25;                   // The interval between the various step of the Xenon effect
 
         // Backfire effect
         unsigned long backfire_interval;                        // Will save the random interval for the backfire effect
@@ -216,6 +222,13 @@
         boolean Blinker                =  true;                 // A flip/flop variable used for blinking
         boolean FastBlinker            =  true;                 // A flip/flop variable used for fast blinking
         boolean IndividualLightBlinker[NumLights] = {true, true, true, true, true, true, true, true};   // A flip/flop variable but this time one for each light. Used for SoftBlink.
+
+        // Wombiii timing array
+        byte specialTimingArray[3][4] = {
+                                            {1,255,blinkLoopsPerCycle,blinkLoopsOn}, 
+                                            {1,255,softblinkLoopsPerCycle,softblinkLoopsOn},
+                                            {1,255,fastblinkLoopsPerCycle,fastblinkLoopsOn}
+                                        };    
 
 
     // RC CHANNEL INPUTS
@@ -268,6 +281,10 @@
           boolean E_Channel3Reverse;
           int E_CurrentScheme;
         };
+
+    // NEW LIGHT SWITCHING - Wombii
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>
+        unsigned long runCount = 0;
 
 
 
@@ -420,6 +437,24 @@ void loop()
 
 // ETERNAL LOOP
 // ------------------------------------------------------------------------------------------------------------------------------------------------>    
+
+    // New light and radio things - Wombii
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>  
+    
+        runCount++; //loopcounter (Used for the new light switching functions and radio read sequencing
+
+        //Just for testing. Can print the time each loop takes:
+        static unsigned long looptimer = 0;
+        //byte looptimerDelay = 0;
+        looptimer = millis()-looptimer;
+        //if (looptimer > 5 && looptimer < 20) looptimerDelay = 20-looptimer;
+        //Serial.println(looptimer);
+        looptimer = millis();
+        //delay(10);
+        //delay(looptimerDelay);
+
+
+
 
     // UPDATE TIMER/BUTTON STATE
     // ------------------------------------------------------------------------------------------------------------------------------------------------>  
@@ -925,5 +960,3 @@ void DumpDebug()
     if (!Channel3Present) { Serial.print(F("NOT ")); }
     Serial.println(F("CONNECTED")); 
 }
-
-
