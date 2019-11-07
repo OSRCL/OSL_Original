@@ -4,13 +4,24 @@
 void GetRxCommands() 
 {
     static int LastThrottleCommand;
+    static uint8_t failsafeCounter = 0;
 
-    while(Failsafe)
+    if (Failsafe)
     {
-        if (DEBUG) Serial.println(F("RX Disconnected!"));
-        ToggleAllLights();                                       // If the receiver isn't connected, pause the program and flash all the lights
-        delay(50);
-        GetThrottleCommand();
+        failsafeCounter++;
+        //if (DEBUG) Serial.println(F("RX: Lost packet"));
+        while(failsafeCounter > 4)                                  // Don't go into failsafe until we've missed 4 sequential packets
+        {
+            if (DEBUG) Serial.println(F("RX Disconnected!"));
+            ToggleAllLights();                                      // If the receiver isn't connected, pause the program and flash all the lights
+            delay(50);
+            GetThrottleCommand();                                   // If we can successfully read the throttle channel, we will go out of failsafe
+            if (Failsafe == false) failsafeCounter = 0;             // We're out of failsafe, exit this while
+        }
+    }
+    else
+    {
+        failsafeCounter = 0;
     }    
 
     byte channelSelector;
