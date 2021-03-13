@@ -32,15 +32,13 @@ void GetRxCommands()
             ThrottleCommand = GetThrottleCommand();
             break;
         case 1:
-            if (SteeringChannelPresent) { TurnCommand = GetTurnCommand(); }
-            else                        { TurnCommand = 0;                }    // We set Turn to nothing if not being used
+            TurnCommand = GetTurnCommand();
             break;
         case 2:
             ThrottleCommand = GetThrottleCommand();
             break;
         case 3:
-            if (Channel3Present)        { Channel3 = GetChannel3Command();}
-            else                        { Channel3 = Pos1;                }     // We set Channel 3 to Position 1 if not being used
+            Channel3 = GetChannel3Command();
             break;
     }
 }
@@ -161,10 +159,10 @@ int GetTurnCommand()
 
         // Average the command if user has this option enabled
         if (SmoothSteering) TurnCommand = smoothSteeringCommand(TurnCommand);
-                
-        return constrain(TurnCommand, MaxLeftTurn, MaxRightTurn);
-        // After all this, TurnCommand is now some value from -100 to +100 where negative equals LEFT and positive equals RIGHT.
     }
+
+    return constrain(TurnCommand, MaxLeftTurn, MaxRightTurn);
+    // After all this, TurnCommand is now some value from -100 to +100 where negative equals LEFT and positive equals RIGHT.
 }
 
 
@@ -175,13 +173,10 @@ int GetChannel3Command()
     
     if (Channel3Pulse == 0)
     {   // In this case, there was no signal found
-        // Channel3Present = false;
         Channel3Command = Pos1;    // If no Channel3, we always set the mode to 1
     }
     else 
     {
-        Channel3Present = true;
-        
         // Turn pulse into one of five possible positions
         if (Channel3Pulse >= Channel3PulseMax - 150)
         {    
@@ -213,10 +208,10 @@ int GetChannel3Command()
             else if (Channel3Command == Pos5) Channel3Command = Pos1;
         }
 
-    }
+        // Average the command if user has this option enabled
+        if (SmoothChannel3) Channel3Command = smoothChannel3Command(Channel3Command);
 
-    // Average the command if user has this option enabled
-    if (SmoothChannel3) Channel3Command = smoothChannel3Command(Channel3Command);
+    }
                 
     return Channel3Command;
 }

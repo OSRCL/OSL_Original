@@ -77,7 +77,7 @@
     // are counted as braking. Tweak the coast times here to match what you see in real life. They are in milliseconds. 
     // 1000 ms = 1 second
     #define TimeToStop_FWD_mS          500          // An estimate of the time usually spent coasting to a stop from forward. During this time, reverse commands will be counted as braking
-    #define TimeToStop_REV_mS          300          // An estimate of the time usually spent coasting to a stop fro reverse. During this time, forward commands will be counted as braking
+    #define TimeToStop_REV_mS          300          // An estimate of the time usually spent coasting to a stop from reverse. During this time, forward commands will be counted as braking
 
     #define DragBrake                 false         // If DragBrake = false, the Brake state will be active only when your car is moving one direction, and you command an opposite direction 
                                                     // If DragBrake = true, the Brake state will still occur in the above example, but it will also occur anytime your throttle stick is near center.
@@ -95,7 +95,7 @@
 // DEADBAND
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
     // This reduces the sensitivity around center stick. The numbers can be 0-100 but should be rather small, like 10. This prevents minor movements of your sticks when
-    // stopped from  setting off your lights. 
+    // stopped from setting off your lights. 
     // Note: if you find you need to set these numbers to high values, what you probably need is to run through Radio Setup instead. 
     #define ThrottleDeadband            10          // Throttle channel hysteriesis. Values below this will be ignored. Default is 10, number should be small. 
     #define TurnDeadband                15          // Same thing, but for steering channel. 

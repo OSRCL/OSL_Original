@@ -1,7 +1,7 @@
  /*
  * Open Source Lights   An Arduino-based program to control LED lights on RC vehicles. 
- * Version:             3.02
- * Last Updated:        11/07/2019
+ * Version:             4.01
+ * Last Updated:        03/12/2021
  * Copyright 2011       Luke Middleton
  *
  * For more information, see the RCGroups thread: 
@@ -11,7 +11,7 @@
  * https://github.com/OSRCL/OSL_Original
  * 
  *
- * To compile select               Tools -> Board     -> Arduino Duemilanove or Diecimila
+ * To compile select               Tools -> Board     -> Arduino Duemilanove or Diecimila or Nano
  * Also select correct processor   Tools -> Processor -> ATmega328
  *
  *
@@ -19,8 +19,11 @@
  *----------------------------------------------------------------------------------------------------------------------------------------------------->
  * Several people have contributed code to this project
  *
+ * LukeZ                March 2021 - added a new state called "No Turn" as opposed to right or left turn, which already existed. This now creates three
+ *                          states on the steering channel, but the user does not have to connect their steering channel to this input - they could 
+ *                          connect any other channel from their radio and therefore have a second, general-purpose 3 position switch for whatever they want
  * Wombii               RCGroups username Wombii
- *                          October 2019 - light fades are now handled incrementally instaed of sequentially, which means thtat turn signals for exmaple
+ *                          October 2019 - light fades are now handled incrementally instead of sequentially, which means that turn signals for exmaple
  *                          no longer occur one after the other but at the same time. 
  * Wombii               RCGroups username Wombii 
  *                          February 2019 - submitted code to average (smooth) incoming RC commands for those experiencing glitching. It can be enabled for 
@@ -128,7 +131,6 @@
         int MaxRevSpeed                =  -100;                 // 
 
         // Steering
-        boolean SteeringChannelPresent;                         // On startup we check to see if this channel is connected, if not, this variable gets set to False and we don't bother checking for it again until reboot
         int TurnCommand                =     0;                 // A mapped value of ThrottlePulse from (TurnPulseMin/TurnPulseMax) to MaxLeft/MaxRight turn (100 each way, or less if governed)
         int TurnPulse;                                          // Positive = Right, Negative = Left <TurnPulseCenter - TurnPulseMin> to <0> to <TurnPulseCenter + TurnPulseMax>
         int TurnPulseMin;                                       // Will ultimately be determined by setup procedure to read max travel on stick, or from EEPROM if setup complete
@@ -147,7 +149,6 @@
                                                                 // we just wait a short amount of time (user configurable in AA_UserConfig.h, variable TurnFromStartContinue_mS)
 
         // Channel 3
-        boolean Channel3Present;                                // On startup we check to see if this channel is connected, if not, this variable gets set to False and we don't bother checking for it again until reboot
         int Channel3Pulse;                                      // 
         int Channel3PulseMin;        
         int Channel3PulseMax;
@@ -166,7 +167,7 @@
                                                                 // Note that the actual schemes are zero-based (0 to NumSchemes-1) but don't worry about that,
                                                                 // the code takes care of it. 
         #define NumLights                    8                  // The number of light outputs available on the board
-        #define NumStates                    14                 // There are 14 possible states a light can be in: 
+        #define NumStates                    15                 // There are 14 possible states a light can be in: 
                                                                 // - Mode 1, Mode 2, Mode 3, Mode 4, Mode 5 (all from Channel3 switch), 
                                                                 // - Forward, Reverse, Stop, Stop Delay, Brake (from Throttle Channel), 
                                                                 // - Right Turn, Left Turn (from Turn Channel)
@@ -184,8 +185,9 @@
         const byte StateBrake          =     9;                 // Braking
         const byte StateRT             =     10;                // Right turn
         const byte StateLT             =     11;                // Left turn
-        const byte StateAccel          =     12;                // Acceleration
-        const byte StateDecel          =     13;                // Deceleration
+        const byte StateNT             =     12;                // "Neutral" turn, ie, no turn
+        const byte StateAccel          =     13;                // Acceleration
+        const byte StateDecel          =     14;                // Deceleration
        
         int ActualDimLevel;                                     // We allow the user to enter a Dim level from 0-255. Actually, we do not want them using numbers 0 or 1. The ActualDimLevel corrects for this.
                                                                 // In practice, it is unlikely a user would want a dim level of 1 anyway, as it would be probably invisible. 
@@ -198,7 +200,7 @@
         // With changes made by Wombii in October 2019 several of these settings are no longer needed
 //        int Dimmable[NumLights] = {1,1,1,1,1,1,0,0};            // This indicates which of these pins are capable of ouputting PWM, in order. PWM-capable pins on the Arduino are 3, 5, 6, 9, 10, 11
                                                                 // Dimmable must be true in order for the light to be capable of DIM, FADEOFF, or XENON settings
-        int PWM_Step[NumLights] = {0,0,0,0,0,0,0,0};            // What is the current PWM value of each light. 
+//        int PWM_Step[NumLights] = {0,0,0,0,0,0,0,0};            // What is the current PWM value of each light. 
 
         // FadeOff effect
 //        int FadeOff_EffectDone[NumLights] = {0,0,0,0,0,0,0,0};  // For each light, if = 1, then the Fade  effect is done, don't do it again until cleared (Fade_EffectDone = 0)
@@ -320,9 +322,6 @@ void setup()
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
         Failsafe = true;                                        // Set failsafe to true
         GetRxCommands();                                        // If a throttle signal is measured, Failsafe will turn off
-        SteeringChannelPresent = CheckSteeringChannel();        // Check for the presence of a steering channel. If we don't find it here, we won't be checking for it again until the board is rebooted
-        Channel3Present = CheckChannel3();                      // Check for the presence of Channel 3. If we don't find it here, we won't be checking for it again until the board is rebooted
-
             
     // LOAD VALUES FROM EEPROM    
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
@@ -478,7 +477,7 @@ void loop()
     // DETECT IF THE USER WANTS TO ENTER CHANGE-SCHEME-MODE
     // ------------------------------------------------------------------------------------------------------------------------------------------------>    
         // To enter scheme-change-mode, the user needs to turn the steering wheel all the way back and forth at least six times (three each way) in quick succession (within ChangeModeTime_mS milliseconds)
-        if (SteeringChannelPresent && canChangeScheme && (abs(TurnCommand) >= MaxTurn) && !ChangeSchemeMode)
+        if (canChangeScheme && (abs(TurnCommand) >= MaxTurn) && !ChangeSchemeMode)
         {    // Here we save how many times they have turned the wheel in each direction. 
             if ((TurnCommand > 0) && (WhatState == false))      
             {   RightCount += 1; 
@@ -953,10 +952,10 @@ void DumpDebug()
 
     // Channels disconnected? 
     Serial.print(F("Steering Channel: "));
-    if (!SteeringChannelPresent == true) { Serial.print(F("NOT ")); }
-    Serial.println(F("CONNECTED")); 
+    if (!CheckSteeringChannel() == true) { Serial.print(F("NOT ")); }
+    Serial.println(F("Connected")); 
 
     Serial.print(F("Channel 3: "));
-    if (!Channel3Present) { Serial.print(F("NOT ")); }
-    Serial.println(F("CONNECTED")); 
+    if (!CheckChannel3()) { Serial.print(F("NOT ")); }
+    Serial.println(F("Connected")); 
 }

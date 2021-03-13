@@ -71,7 +71,7 @@ void SetLights(int DriveMode)
             if (LightSettings[j][StateDecel] != NA) { SaveSetting[j] = LightSettings[j][StateDecel]; } // Or we can allow any setting during deceleration
         }
 
-        // Next - 
+        // Next - does this light come on during acceleration (aka, Overtaking?)
         // --------------------------------------------------------------------------------------------------->>        
         if (Overtaking)
         {
@@ -137,8 +137,14 @@ void SetLights(int DriveMode)
             // We may also want to artificially create any setting assigned to the turn state
             else if (AllTurnSettingsMatch)                                                    { SaveSetting[j] = LightSettings[j][StateLT]; }
         }
-   
+
+        if (TurnCommand == 0)       // No turn
+        {
+            if (LightSettings[j][StateNT] != NA) { SaveSetting[j] = LightSettings[j][StateNT]; }               
+        }
+
         // Light "j" now has a single setting = SaveSetting[j]
+        // --------------------------------------------------------------------------------------------------->>          
         // We call the function that will set this light to that setting
         SetLight(j, SaveSetting[j]);
     }
@@ -305,18 +311,22 @@ void SetLight(int WhatLight, int WhatSetting)
             break;            
     }
 
-    activeLightValue = SimpleFader(WhatLight, WantedFade, WantedLightValue);
 
-    //Actually write to the pins: (Could do all with analogWrite, but can do the digitalWrite parts to possibly save some time)
-    if (activeLightValue == 0)
-        digitalWrite(LightPin[WhatLight],LOW);
-    else if (activeLightValue == 255)
-        digitalWrite(LightPin[WhatLight],HIGH);
-    else
-        analogWrite(LightPin[WhatLight],activeLightValue);
+    if (WhatSetting != BACKFIRE)    // Backfire is handled by its own function already called above, do not set it here
+    {
+        activeLightValue = SimpleFader(WhatLight, WantedFade, WantedLightValue);
+    
+        //Actually write to the pins: (Could do all with analogWrite, but can do the digitalWrite parts to possibly save some time)
+        if (activeLightValue == 0)
+            digitalWrite(LightPin[WhatLight],LOW);
+        else if (activeLightValue == 255)
+            digitalWrite(LightPin[WhatLight],HIGH);
+        else
+            analogWrite(LightPin[WhatLight],activeLightValue);
+    }
 
    //Can skip some steps by doing only
-   //analogWrite(LightPin[WhatLight],SimpleFader(WhatLight, WantedFade, WantedLightValue);
+   //analogWrite(LightPin[WhatLight],SimpleFader(WhatLight, WantedFade, WantedLightValue));
    //but splitting it might be more readable.
 
 
@@ -499,6 +509,7 @@ byte SimpleFader(byte currentPin, byte wantedFadeSetting, byte wantedOutput)
         }
         break;
 */
+      case FADEDISABLED:
       default:
         calculatedOutput = wantedOutput;
         previousFadeSetting[currentPin] = 0;
@@ -1031,7 +1042,7 @@ void ReverseLight(int WhatLight)
     // If light is on, turn it off. But if light is off, turn it on.
     OppositeVal = !digitalRead(LightPin[WhatLight]);
     digitalWrite(LightPin[WhatLight], OppositeVal);
-    PWM_Step[WhatLight] = OppositeVal;
+//    PWM_Step[WhatLight] = OppositeVal;
 }
 
 void ReturnToPriorState(int WhatLight, int WhatState)

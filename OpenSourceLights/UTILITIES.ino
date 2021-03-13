@@ -17,5 +17,5 @@ void PrintHorizontalLine()
 
 void PrintTrueFalse(boolean boolVal)
 {
-    if (boolVal == true) { Serial.println(F("TRUE")); } else { Serial.println(F("FALSE")); }
+    if (boolVal == true) { Serial.println(F("True")); } else { Serial.println(F("False")); }
 }
