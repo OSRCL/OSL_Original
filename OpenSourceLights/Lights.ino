@@ -466,6 +466,8 @@ byte SimpleFader(byte currentPin, byte wantedFadeSetting, byte wantedOutput)
         else if (wantedOutput < lastOutput)
         {
           calculatedOutput = max(0.9*lastOutput,wantedOutput); //change to sine wave fade?
+          // If you don't want the xenon light to fade out, comment the line above and uncomment the line below: 
+          // calculatedOutput = wantedOutput;
           previousFadeSetting[currentPin] = FADEXENON;
         }
         else if (wantedOutput == lastOutput)
