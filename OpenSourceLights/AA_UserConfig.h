@@ -7,24 +7,30 @@
 
 // STATE SETTINGS
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    #define LongStopTime_mS          30000          // The Stop Delay state only occurs when the vehicle has been stopped for some length of time, which is set here. 
-                                                    // Recall that 1000 mS = 1 second (default value is 30 seconds)
+    #define LongStopTime_mS         30000L          // The Stop Delay state only occurs when the vehicle has been stopped for some length of time, which is set here. 
+                                                    // Recall that 1000 mS = 1 second (default value is 30 seconds) (for large define numbers, we put an "L" after the number)
 
 
-// LIGHT SETTINGS - DIM LEVEL
-// ------------------------------------------------------------------------------------------------------------------------------------------------>
-    #define DimLevel                    20          // Number from 0-255, with 0 being off, 255 being full on. Often numbers much greater than half (128) are hard to distinguish from full on. 
-                                                    // Experiment to get the number that makes your lights as dim as you want them. 
-    
 // LIGHT SETTINGS - BLINKING
 // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-    #define BlinkInterval              650          // A value in milliseconds that sets the blink rate for blinking lights set to "BLINK" or "SOFTBLINK" (for example, turn signals). 1000 = 1 second
-    #define FastBlinkInterval           15          // A value in milliseconds that sets the fast blink rate for lights set to "FASTBLINK"
+    #define BlinkInterval              378          // A value in milliseconds that sets the blink rate for blinking lights set to "BLINK" (for example, turn signals). 1000 = 1 second
+    #define FastBlinkInterval           50          // A value in milliseconds that sets the fast blink rate for lights set to "FASTBLINK"
 
-    #define SoftBlinkFadeInDelay         6          // The SOFTBLINK effect fades the light in and out as it blinks. Each fade consists of 20 steps. You can set the amount of delay between each
-    #define SoftBlinkFadeOutDelay       17          // step, and the delay can be different for fade in and out. Take for example a FadeInDelay of 5 mS. There are 20 steps to fade in, 
-                                                    // so 20 * 5 = 100mS for the light to fade in. The total amount of time for the fade in + the fade out should not exceed BlinkInterval. 
+    #define SoftBlinkFadeInTime        200          // The SOFTBLINK effect fades the light in and out as it blinks. You can set the length of time for the fade-in and the fade-out 
+    #define SoftBlinkFadeOutTime       500          // seperately. Values are milliseconds (1000 mS = 1 second)
+    
 
+// LIGHT SETTINGS - DIM
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    #define DimLevel                    50          // The level of brightness for the DIM setting, this is a number from 0-255, with 0 being off, 255 being full on. 
+                                                    // Often numbers much greater than half (128) are hard to distinguish from full on. Experiment to get the number 
+                                                    // that makes your lights as dim as you want them. 
+    
+// LIGHT SETTINGS - FADE IN / OUT
+// ------------------------------------------------------------------------------------------------------------------------------------------------>  
+    #define FadeOutTime                300         // Length of time the fade out takes, in milliseconds (1000 mS = 1 second)
+    #define FadeInTime                  50         // Length of time the fade-in takes. For realism this should usually be quite short, but the minimum 
+                                                   // value is 50 (1/20th of a second). If you set it lower than that, it will automatically be changed to 50 at runtime.
 
 // LIGHT SETTINGS - TURN SIGNALS
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
@@ -33,12 +39,12 @@
                                                     // For that reason, you will probably want to keep this "true"
                                                     // NOTE: This only applies to a BLINK or SOFTBLINK setting in the "RightTurn" or "LeftTurn" states. 
                                                     // Any setting other than BLINK or SOFTBLINK in the "RightTurn" or "LeftTurn" column will NOT be affected. 
-    #define AllTurnSettingsMatch      false         // Set to true to restrict all other turn settings (not just BLINK and SOFTBLINK) to the same conditions imposed by BlinkTurnOnlyAtStop
+    #define AllTurnSettingsMatch     false          // Set to true to restrict all other left or right turn settings (not just BLINK and SOFTBLINK) to the same conditions imposed by BlinkTurnOnlyAtStop
 
     #define TurnSignalDelay_mS        3000          // If BlinkTurnOnlyAtStop = true, this setting further refines when the turn signals can come on. Instead of coming on right when the 
                                                     // car reaches a stop, you can set a delay in milliseconds (1000 mS = 1 second) before they will be enabled. This way, if you come 
                                                     // to a stop while the wheels are turned, the turn signals will not come on instantly, which looks very strange. 
-                                                    // Instead there will be a delay of TurnSignalDelay_mS milliseconds after which you can hold the wheels over and the turn signals will come on. 
+                                                    // Instead there will be a delay of TurnSignalDelay_mS milliseconds after which you can hold the wheels over and the turn signals will then come on. 
                                                     // Once again we are trying to prevent the unrealistic engagement of turn signals, but rather have them only engaged when you specifically
                                                     // want to for display purposes. 
     #define TurnFromStartContinue_mS  1000          // If BlinkTurnOnlyAtStop = true, this setting determines the length of time the turn signal will continue to blink when you begin moving from 
@@ -64,84 +70,89 @@
                                                     // This will trigger the Backfire effect for any light in the Decelerating column with the setting
                                                     // of BACKFIRE. You can put other settings in the Decelerating column besides Backfire, and they will 
                                                     // work, but they will only be enabled for the same length of time as the backfire event
-    #define BF_Time                    170          // How long in milliseconds (1000 ms = 1 second) on average should a backfire event last. It will actually be 
-                                                    // a random length of time spanning from (BF_Time - BF_Long) to (BF_Time + BF_Long)
-    #define BF_Short                    10          // BF_Short and BF_Long are the upper and lower limits to the span of time the backfiring LED will blink. 
-    #define BF_Long                     60          // In other words, while backfiring the LED will blink randomly on and off for some value between BF_Short and BF_Long
+    #define BF_Time_Short              200          // How long in milliseconds (1000 ms = 1 second) on average should a backfire event last. It will actually be 
+    #define BF_Time_Long               600          // a random length of time spanning from BF_Time_Short - BF_Long to BF_Time_Long
+    
+    #define BFF_Short                   30          // The two defines above determine the total length of time the backfire event will take, these two defines determine the upper and lower
+    #define BFF_Long                   100          // limits to the time each individual blink (or flicker) will take within the overall backfire event. In other words, while backfiring 
+                                                    // the light will blink randomly on and off for some values between BFF_Short and BFF_Long
 
 
-// COASTING
+// BRAKE LIGHTS AT LOW THROTTLE
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // If we didn't allow any time for the car to coast to a stop, there would be no need for braking, and your brake lights would never come on. However in real life, 
-    // your car does coast even after you let off the 'gas'. During this time, opposite throttle commands are actually counted as a command to change direction, but instead
-    // are counted as braking. Tweak the coast times here to match what you see in real life. They are in milliseconds. 
-    // 1000 ms = 1 second
-    #define TimeToStop_FWD_mS          500          // An estimate of the time usually spent coasting to a stop from forward. During this time, reverse commands will be counted as braking
-    #define TimeToStop_REV_mS          300          // An estimate of the time usually spent coasting to a stop from reverse. During this time, forward commands will be counted as braking
-
-    #define DragBrake                 false         // If DragBrake = false, the Brake state will be active only when your car is moving one direction, and you command an opposite direction 
-                                                    // If DragBrake = true, the Brake state will still occur in the above example, but it will also occur anytime your throttle stick is near center.
-                                                    // In other words, setting this to true essentially has your brakes come on automatically whenever you are coasting. For touring cars, this 
-                                                    // can sometimes make for a nice effect going round a track (brake lights should come on in advance of a curve, for example). 
-                                                    // NOTE: If you want your brakes to come on automatically whenever you are STOPPED, you should set that in the LIGHT_SETUP tab under the Stop column. 
-
-// SHIFTING TIME
-// ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // How much of a pause is required before changing directions (from forward to reverse or from reverse to forward). 
-    // For most ESCs this will be close to zero. 
-    #define TimeToShift_mS             100          // The pause time in milliseconds that will be required before the vehicle is allowed to change direction
-
+    #define BrakeAtThrottlePctBelow     0           // Background: Normally the Brake state can only occur if DoubleTapReverse = true and you hit reverse for the first time. This doesn't put you into reverse, 
+                                                    // instead it turns on the brake lights. Only the second time you command reverse will the reverse state actually occur. 
+                                                    // If DoubleTapReverse = false, there is no way for the brake state to ever occur, because you can instantly transition from forward to reverse and vice versa. 
+                                                    // Of course you also have the option of setting your brake lights to ON in the Stop state, but then they are always on when stopped, which you may or may not want. 
+                                                    // What this setting does: here you can set a percent and whenever the throttle command is above zero but less than or equal to that percent, 
+                                                    // the Brake state will occur. This allows your brake lights to come on when you slow down, but you are still able to have them turn off when stopped. 
+                                                    // Set this value to 0 (zero) to disable the low throttle brake lights effect. 
 
 // DEADBAND
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // This reduces the sensitivity around center stick. The numbers can be 0-100 but should be rather small, like 10. This prevents minor movements of your sticks when
-    // stopped from setting off your lights. 
-    // Note: if you find you need to set these numbers to high values, what you probably need is to run through Radio Setup instead. 
-    #define ThrottleDeadband            10          // Throttle channel hysteriesis. Values below this will be ignored. Default is 10, number should be small. 
-    #define TurnDeadband                15          // Same thing, but for steering channel. 
+    // Because the receiver signal will tend to drift even when your radio controls are resting at center, you may find your turn signals or other lights 
+    // turning on randomly. To prevent this from happening you can adjust the deadband, and if that is insufficient, you can enabled channel smoothing (later below). 
+    // Start with deadband first, it reduces the sensitivity around the channel center point. 
+    // The channel values (as used in this program) range from 0 (center) to 100 (full travel). If you set the deadband to 10, that means any command 
+    // of 10 or less will be ignored. This will reduce sensitivity, but since we are only controlling lights here and not the actual vehicle, that's fine. 
+    // Experiment with the values, but keep them as low as practical. 
+    // If that doesn't work, try channel smoothing below. Another thing is to try running through Radio Setup again, to make sure OSL really does know your 
+    // radio's actual center points. 
+    #define ThrottleDeadband            10          // Throttle channel hysteresis. Values below this will be ignored. Default is 10, number should be small. 
+    #define TurnDeadband                20          // Same thing, but for steering channel. 
 
 
-// RC Input Smoothing
+// RC INPUT SMOOTHING
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // Enable if you experience glitching on any channel. Most users do not need it. 
+    // Unlike deadband which ignores minor RC changes around the center point, smoothing will essentially average the incoming signals. This will 
+    // eliminate random glitching, but comes once again at the expense of decreased sensitivity. 
+    #define smoothingStrength         1             // Number from 0-4, the higher the number the greater the smoothing. Use minimum acceptable value.
     #define SmoothThrottle            false
     #define SmoothSteering            false
     #define SmoothChannel3            false
-    #define smoothingStrength         3             // Number from 0-4. Change this value to set strength of smoothing. Use minimum acceptable value.
+
+
+// SHELF-QUEEN MODE
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    // Shelf-queen mode allows the OSL to operate even without radio signals. You can use this for models that will be put on display (aka, "shelf queens"),
+    // just apply power to the OSL without connecting that radio signal wire. 
+    // If enableShelfQueenMode = true, and the OSL does not detect a radio signal, it will set all lights to their settings in "Pos 1" (first position) of 
+    // Channel 3 for the scheme number specified ("shelfQueenSchemeNumber")
+    // NOTE: the shelf-queen check will only happen once at startup. If a radio signal is later detected, the OSL will return to normal operation and it will 
+    // initialize itself to the prior active scheme regardless of what the shelf queen scheme number is set to below. If the radio signal is lost after that, 
+    // OSL will go into failsafe mode as usual, it will not attempt to return to shelf-queen mode until the next startup. 
+    // NOTE: if you specify a scheme number greater than 1, you need to make sure you have that scheme defined in AA_LIGHT_SETUP!
+    #define enableShelfQueenMode      true
+    #define shelfQueenSchemeNumber       2
+
+    // We can also add a random delay before the lights come on in shelf queen mode, this may be desirable if you have multiple models on display with a single
+    // power source to all of them, the random delay will mean the lights on each model will turn on at a different time. To enable this feature set 
+    // "enableShelfQueenDelay" to true and then define the range of time within which you want the random delay to occur ("sqd_Time_Short" and "sqd_Time_Long").
+    // If you want the lights to come on immediately, set "enableShelfQueenDelay" to false. 
+    #define enableShelfQueenDelay     true
+    #define sqd_Time_Short             100
+    #define sqd_Time_Long             6000
 
 
 // DEBUGGING
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    #define DEBUG                     false         // Set this to true to receive debugging messages out the serial port. NOTE: This will make the program less responsive, 
-                                                    // so turn it off when you are done troubleshooting. 
+    #define DEBUG                     false         // Set this to true to receive debugging messages out the serial port. 
     #define LED_DEBUG                 true          // If this is set to true, the Green LED on the board will be on whenever the car is moving forward, 
                                                     // the Red LED will come on whenever the car is moving in reverse, 
                                                     // both LEDs will turn OFF when the car is stopped,  
                                                     // both LEDs will turn ON when the car is braking,
-                                                    // the Red LED will blink quickly if you are turning left, and
-                                                    // the Green LED will blink quickly if you are turning right.
+                                                    // the Red LED will blink if you are turning left, and
+                                                    // the Green LED will blink if you are turning right.
                                                     // You can use these to verify the board is working correctly without having any lights connected.
-                                                    // LED_DEBUG does not affect the performance of the circuit, so you can leave it on.                                                  
-    #define BLINK_LIGHTS_RX_LOST      true          // If true, all eight LED outputs will blink rapidly when the radio signal has been lost. 
-                                                    // If set to false, only the onboard Red and Green LEDs will blink when the radio signal has been lost
+    #define BLINK_LIGHTS_RX_LOST      false         // If true, all eight LED outputs will blink rapidly when the radio signal has been lost. 
+                                                    // If set to false, only the onboard Red and Green LEDs will blink when the radio signal has been lost.
 
 // SERIAL
 // ------------------------------------------------------------------------------------------------------------------------------------------------>
     #define BaudRate                 38400          // Set baud rate here if you know what you're doing and don't like the default value
 
                                                     
-// NEW LIGHT FUNCTIONS - Wombii
-// ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // Calculate loopsPerCycle: each loop is probably 5-20ms depending on radio, so 50 *20ms = 1 second.
-    const byte blinkLoopsPerCycle       = 40;
-    const byte blinkLoopsOn             = 20;
-    
-    const byte softblinkLoopsPerCycle   = 100;
-    const byte softblinkLoopsOn         = 40;
-    
-    const byte fastblinkLoopsPerCycle   = 8;
-    const byte fastblinkLoopsOn         = 3;
-    
+
       
 
 

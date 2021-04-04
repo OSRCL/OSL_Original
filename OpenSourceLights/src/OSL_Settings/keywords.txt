@@ -1,0 +1,83 @@
+#-------------------------------------------------------------
+# Syntax Coloring Map
+# Words separated by TAB, not SPACE
+#-------------------------------------------------------------
+
+
+#-------------------------------------------------------------
+# KEYWORD1 - Classes
+#-------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------
+# KEYWORD2 - Methods, functions, members
+#-------------------------------------------------------------
+
+
+
+#-------------------------------------------------------------
+# LITERAL1 - Constants & Defines
+#-------------------------------------------------------------
+FIRMWARE_VERSION	LITERAL1
+NumLights	LITERAL1
+NumStates	LITERAL1
+Mode1	LITERAL1
+Mode2	LITERAL1
+Mode3	LITERAL1
+Mode4	LITERAL1
+Mode5	LITERAL1
+StateFwd	LITERAL1
+StateRev	LITERAL1
+StateStop	LITERAL1
+StateStopDelay	LITERAL1
+StateBrake	LITERAL1
+StateRT	LITERAL1
+StateLT	LITERAL1
+StateNT	LITERAL1
+StateAccel	LITERAL1
+StateDecel	LITERAL1
+State_Unknown	LITERAL1
+OFF	LITERAL1
+ON	LITERAL1
+NA	LITERAL1
+BLINK	LITERAL1
+FASTBLINK	LITERAL1
+SOFTBLINK	LITERAL1
+DIM	LITERAL1
+FADEOFF	LITERAL1
+FADEON	LITERAL1
+XENON	LITERAL1
+BACKFIRE	LITERAL1
+LS_UNKNOWN	LITERAL1
+RIGHT_TURN	LITERAL1
+NO_TURN	LITERAL1
+LEFT_TURN	LITERAL1
+STOP	LITERAL1
+FWD	LITERAL1
+REV	LITERAL1
+NUM_RC_CHANNELS	LITERAL1
+PULSE_WIDTH_ABS_MIN	LITERAL1
+PULSE_WIDTH_ABS_MAX	LITERAL1
+PULSE_WIDTH_TYP_MIN	LITERAL1
+UPLSE_WIDTH_TYP_MAX	LITERAL1
+PULSE_WIDTH_TYP_CENTER	LITERAL1
+RC_PULSECOUNT_TO_ACQUIRE	LITERAL1
+RC_TIMEOUT_US	LITERAL1
+RC_TIMEOUT_MS	LITERAL1
+COMMAND_MAX_FORWARD	LITERAL1
+COMMAND_MAX_REVERSE	LITERAL1
+RC_SIGNA_UNINITIALIZED	LITERAL1
+RC_SIGNAL_ACQUIRE	LITERAL1
+RC_SIGNAL_SYNCHED	LITERAL1
+RC_SIGNAL_LOST	LITERAL1
+Pos1	LITERAL1
+Pos2	LITERAL1
+Pos3	LITERAL1
+Pos4	LITERAL1
+Pos5	LITERAL1
+ShelfQueenCh3Position	LITERAL1
+FWD_to_REV_BrakeTime	LITERAL1
+pin_VCHECK_A	LITERAL1
+pin_VCHECK_B	LITERAL1
+MAX_SIMPLETIMER_SLOTS	LITERAL1

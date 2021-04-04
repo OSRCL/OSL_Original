@@ -1,110 +1,99 @@
+
 void RadioSetup()
 {
-int Count;
 unsigned long TotThrottlePulse = 0;
 unsigned long TotTurnPulse = 0;
 unsigned long TotChannel3Pulse = 0;
 float TempFloat;
-boolean RunSetup = false;
-int TypicalPulseCenter = 1500;
-int MaxPossiblePulse = 2250;
-int MinPossiblePulse = 750;
+int Count;
+#define _line_width 40
+BlinkStream bs;     // Used for some blinking effects
 
-int GreenBlinker;                        // We'll use this to create a SimpleTimer for the green led, that flashes to represent which stage we are in.     
-    
        
 // RUN SETUP
 // -------------------------------------------------------------------------------------------------------------------------------------------------->        
+    Serial.println();
+    Serial.println();
     Serial.println(F("ENTERING SETUP...")); 
     Serial.println();
 
     // While in setup, Red LED remains on:
-        RedLedOn();
+        RedLED.on();
+        delayWhilePolling(2000);
+
 
     // STAGE 1 = Read max travel values from radio, save to EEPROM
     // ------------------------------------------------------------------------------------------------------------------------------------------>                  
         // Transition to Stage 1:
         // Green LED on steady for two seconds
-        delay(2000);
+        PrintLine(_line_width);
         Serial.println(F("STAGE 1 - STORE MAX TRAVEL VALUES"));
-        PrintHorizontalLine();
+        PrintLine(_line_width);
         Serial.println(F("Move all controls to maximum values"));
         Serial.println(F("while green LED blinks"));
         Serial.println();
-        GreenLedOn();
-        delay(2000);
-        GreenLedOff();
-        delay(2000);
+        GreenLED.on();
+        delayWhilePolling(2000);
+        GreenLED.off();
+        delayWhilePolling(2000);
 
         // Start green LED blinking for stage one: one blink every 1200 ms
-        GreenBlinker = StartBlinking_ms(GreenLED, 1, 1200);    // Blip the GreenLED once every 1200ms
+        GreenLED.startBlinking(100, 1200);
         StartWaiting_sec(15);
         Serial.println(F("Reading..."));
 
         // We initialize every min and max value to TypicalPulseCenter. In the loop below we will record deviations from the center. 
-        ThrottlePulseMin = TypicalPulseCenter;
-        ThrottlePulseMax = TypicalPulseCenter;
-        TurnPulseMin     = TypicalPulseCenter;
-        TurnPulseMax     = TypicalPulseCenter;
-        Channel3PulseMin = TypicalPulseCenter;
-        Channel3PulseMax = TypicalPulseCenter;
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {
+            RC_Channel[i].pulseMin = PULSE_WIDTH_TYP_CENTER;
+            RC_Channel[i].pulseMax = PULSE_WIDTH_TYP_CENTER;
+        }
 
         // Repeat until StartWaiting timer is up
         do
         {
+            // Read the radio
+            PerLoopUpdates();
+
             // Read channel while the user moves the sticks to the extremes
-            ThrottlePulse = pulseIn(ThrottleChannel_Pin, HIGH, ServoTimeout);  
-            TurnPulse = pulseIn(SteeringChannel_Pin, HIGH, ServoTimeout);
-            Channel3Pulse = pulseIn(Channel3_Pin, HIGH, ServoTimeout);
             // Each time through the loop, only save the extreme values if they are greater than the last time through the loop. 
             // At the end we should have the true min and max for each channel.
-            if (ThrottlePulse > ThrottlePulseMax)  { ThrottlePulseMax   = ThrottlePulse; }
-            if (TurnPulse     > TurnPulseMax)      { TurnPulseMax       = TurnPulse;     }
-            if (Channel3Pulse > Channel3PulseMax)  { Channel3PulseMax   = Channel3Pulse; }
-            // However we don't save a min pulse if it is equal to zero, because that is not valid. 
-            if (ThrottlePulse > 0 && ThrottlePulse < ThrottlePulseMin)  { ThrottlePulseMin   = ThrottlePulse; }
-            if (TurnPulse     > 0 && TurnPulse     < TurnPulseMin    )  { TurnPulseMin       = TurnPulse;     }
-            if (Channel3Pulse > 0 && Channel3Pulse < Channel3PulseMin)  { Channel3PulseMin   = Channel3Pulse; }
-            
-            // Refresh the timer
-            timer.run();
+            for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+            {
+                if (RC_Channel[i].pulse > RC_Channel[i].pulseMax) RC_Channel[i].pulseMax = RC_Channel[i].pulse;
+                if (RC_Channel[i].pulse > 0 && RC_Channel[i].pulse < RC_Channel[i].pulseMin) RC_Channel[i].pulseMin = RC_Channel[i].pulse;
+            }
         }
         while (!TimeUp);    // Keep looping until time's up
-        StopBlinking(GreenBlinker);
+        GreenLED.stopBlinking();
         
         // Sanity check in case something weird happened (like Tx turned off during setup, or some channels disconnected)
-        if (ThrottlePulseMin < MinPossiblePulse)  {ThrottlePulseMin = MinPossiblePulse;}
-        if (TurnPulseMin < MinPossiblePulse)      {TurnPulseMin = MinPossiblePulse;}
-        if (Channel3PulseMin < MinPossiblePulse)  {Channel3PulseMin = MinPossiblePulse;}                
-        if (ThrottlePulseMax > MaxPossiblePulse)  {ThrottlePulseMax = MaxPossiblePulse;}
-        if (TurnPulseMax > MaxPossiblePulse)      {TurnPulseMax = MaxPossiblePulse;}
-        if (Channel3PulseMax > MaxPossiblePulse)  {Channel3PulseMax = MaxPossiblePulse;}                
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {
+            if (RC_Channel[i].pulseMin < PULSE_WIDTH_ABS_MIN) RC_Channel[i].pulseMin = PULSE_WIDTH_ABS_MIN;
+            if (RC_Channel[i].pulseMax > PULSE_WIDTH_ABS_MAX) RC_Channel[i].pulseMax = PULSE_WIDTH_ABS_MAX;
+        }
 
         // Save values to EEPROM
-        eeprom_write(ThrottlePulseMin, E_ThrottlePulseMin);
-        eeprom_write(ThrottlePulseMax, E_ThrottlePulseMax);
-        eeprom_write(TurnPulseMin, E_TurnPulseMin);
-        eeprom_write(TurnPulseMax, E_TurnPulseMax);
-        eeprom_write(Channel3PulseMin, E_Channel3PulseMin);
-        eeprom_write(Channel3PulseMax, E_Channel3PulseMax);
+        eeprom_write(RC_Channel[0].pulseMin, E_ThrottlePulseMin);
+        eeprom_write(RC_Channel[0].pulseMax, E_ThrottlePulseMax);
+        eeprom_write(RC_Channel[1].pulseMin, E_TurnPulseMin);
+        eeprom_write(RC_Channel[1].pulseMax, E_TurnPulseMax);
+        eeprom_write(RC_Channel[2].pulseMin, E_Channel3PulseMin);
+        eeprom_write(RC_Channel[2].pulseMax, E_Channel3PulseMax);
 
         Serial.println();
-        Serial.println(F("Stage 1 Results: Min - Max pulse values"));
-        Serial.print(F("Throttle: "));
-        Serial.print(ThrottlePulseMin);
-        PrintSpaceDash();
-        Serial.println(ThrottlePulseMax);
-        Serial.print(F("Turn: "));
-        Serial.print(TurnPulseMin);
-        PrintSpaceDash();
-        Serial.println(TurnPulseMax);
-        Serial.print(F("Ch3: "));
-        Serial.print(Channel3PulseMin);
-        PrintSpaceDash();
-        Serial.println(Channel3PulseMax);
-
+        Serial.println(F("Stage 1 Results: Min & Max pulse values"));
+        Serial.println(F("Channel       Min       Max"));
+        PrintLine(_line_width);
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {
+            PrintChannelName(i, true);  // True for padding after the word
+            Serial.print(RC_Channel[i].pulseMin);
+            if (RC_Channel[i].pulseMin < 1000) PrintSpaces(7); else PrintSpaces(6);
+            Serial.println(RC_Channel[i].pulseMax);
+        }
         Serial.println();
-        Serial.println(F("STAGE 1 COMPLETE"));
         Serial.println();
         Serial.println();
         
@@ -115,15 +104,16 @@ int GreenBlinker;                        // We'll use this to create a SimpleTim
     // ------------------------------------------------------------------------------------------------------------------------------------------>       
         // Transition to Stage 2:
         // Off for two seconds, two slow blinks
-        GreenLedOff();
-        delay(2000);        
+        GreenLED.off();
+        delayWhilePolling(2000);        
+        PrintLine(_line_width);
         Serial.println(F("STAGE 2 - STORE CENTER VALUES"));
-        PrintHorizontalLine();
+        PrintLine(_line_width);
         Serial.println(F("Place throttle and steering in NEUTRAL."));
         Serial.println(F("If Channel 3 is a 3-position switch, set it to CENTER."));
         Serial.println();
-        GreenBlinkSlow(2);
-        delay(2000);
+        GreenLED.Blink(2, 750, 500);    // Blink twice, 750mS on, 500mS off
+        delayWhilePolling(2000);
 
         // Initialize some variables
         TotThrottlePulse = 0;
@@ -132,59 +122,60 @@ int GreenBlinker;                        // We'll use this to create a SimpleTim
         Count = 0;
 
         // Start green LED blinking for stage two: two blinks every 1200 ms
-        GreenBlinker = StartBlinking_ms(GreenLED, 2, 1200);    // Blip the GreenLED twice every 1200ms
+        bs.interval[0] = 100;               // On
+        bs.interval[1] = 90;                // Off
+        bs.interval[2] = 100;               // On
+        bs.interval[3] = 1200;              // Off
+        bs.repeat = true;
+        GreenLED.StreamBlink(bs, 4);        // 4 steps in the stream
+
         StartWaiting_sec(6); // For the first bit of time we don't take any readings, this lets the user get the sticks centered
         Serial.println(F("Reading..."));
-        do
-        {
-            delay(100);
-            timer.run();
-        }        
-        while (!TimeUp);
+        while (!TimeUp)
+        {    PerLoopUpdates(); }
+
         StartWaiting_sec(4); // Now for the next four seconds we check the sticks
         do
         {        
-            TotThrottlePulse += pulseIn(ThrottleChannel_Pin, HIGH, ServoTimeout);  
-            TotTurnPulse += pulseIn(SteeringChannel_Pin, HIGH, ServoTimeout);
-            TotChannel3Pulse += pulseIn(Channel3_Pin, HIGH, ServoTimeout);
+            delayWhilePolling(100);
+            TotThrottlePulse += RC_Channel[0].pulse;  
+            TotTurnPulse += RC_Channel[1].pulse;
+            TotChannel3Pulse += RC_Channel[2].pulse;
             // Increment reading count
             Count++;
-            delay(10);
-            // Refresh the timer
-            timer.run();
         }
         while (!TimeUp);    // Keep looping until time's up
-        StopBlinking(GreenBlinker);
+        GreenLED.stopBlinking();
 
         // Finally we record our readings
         TempFloat = (float)TotThrottlePulse / (float)Count;
-        ThrottlePulseCenter = (int)lround(TempFloat);
+        RC_Channel[0].pulseCenter = (int)lround(TempFloat);
         TempFloat = (float)TotTurnPulse / (float)Count;
-        TurnPulseCenter = (int)lround(TempFloat);
+        RC_Channel[1].pulseCenter = (int)lround(TempFloat);
         TempFloat = (float)TotChannel3Pulse / (float)Count;
-        Channel3PulseCenter = (int)lround(TempFloat);
+        RC_Channel[2].pulseCenter = (int)lround(TempFloat);
 
         // Sanity check in case something weird happened (like Tx turned off during setup, or some channels disconnected)
-        if ((ThrottlePulseCenter < MinPossiblePulse) || (ThrottlePulseCenter > MaxPossiblePulse))   {ThrottlePulseCenter = TypicalPulseCenter; }
-        if ((TurnPulseCenter < MinPossiblePulse) || (TurnPulseCenter > MaxPossiblePulse))           {TurnPulseCenter = TypicalPulseCenter;     }
-        if ((Channel3PulseCenter < MinPossiblePulse) || (Channel3PulseCenter > MaxPossiblePulse))   {Channel3PulseCenter = TypicalPulseCenter; }                
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {        
+            if ((RC_Channel[i].pulseCenter < PULSE_WIDTH_TYP_MIN) || (RC_Channel[i].pulseCenter > PULSE_WIDTH_TYP_MAX))   {RC_Channel[i].pulseCenter = PULSE_WIDTH_TYP_CENTER; }
+        }
 
         // Save values to EEPROM
-        eeprom_write(ThrottlePulseCenter, E_ThrottlePulseCenter);
-        eeprom_write(TurnPulseCenter, E_TurnPulseCenter);
-        eeprom_write(Channel3PulseCenter, E_Channel3PulseCenter);
+        eeprom_write(RC_Channel[0].pulseCenter, E_ThrottlePulseCenter);
+        eeprom_write(RC_Channel[1].pulseCenter, E_TurnPulseCenter);
+        eeprom_write(RC_Channel[2].pulseCenter, E_Channel3PulseCenter);
 
         Serial.println();
         Serial.println(F("Stage 2 Results - Pulse center values"));
-        Serial.print(F("Throttle: "));
-        Serial.println(ThrottlePulseCenter);
-        Serial.print(F("Turn: "));
-        Serial.println(TurnPulseCenter);
-        Serial.print(F("Ch3: "));
-        Serial.println(Channel3PulseCenter);
-
+        Serial.println(F("Channel       Center"));
+        PrintLine(_line_width);
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {
+            PrintChannelName(i, true);  // True for padding after the word
+            Serial.println(RC_Channel[i].pulseCenter);
+        }
         Serial.println();
-        Serial.println(F("STAGE 2 COMPLETE"));
         Serial.println();        
         Serial.println();
 
@@ -199,54 +190,62 @@ int GreenBlinker;                        // We'll use this to create a SimpleTim
         // allows us to determine if we need to reverse any channels in software. 
 
         // Transition to Stage 3:
-        GreenLedOff();
-        delay(2000);            
+        GreenLED.off();
+        delayWhilePolling(2000);            
+        PrintLine(_line_width);
         Serial.println(F("STAGE 3 - STORE CHANNEL DIRECTIONS"));
-        PrintHorizontalLine();
+        PrintLine(_line_width);
         Serial.println(F("Hold trigger down (full forward), hold steering wheel full right, set Channel 3 to ON"));
         Serial.println();
-        GreenBlinkSlow(3);
-        delay(2000);                
+        GreenLED.Blink(2, 750, 500);    // Blink three times, 750mS on, 500mS off
+        delayWhilePolling(2000);                
         
         // Initialize some variables
         TotThrottlePulse = 0;
         TotTurnPulse = 0;                        
         TotChannel3Pulse = 0;                
-
         Count = 0;
-        
-        ThrottleChannelReverse = false;
-        TurnChannelReverse = false;
-        Channel3Reverse = false;
+
+        // Clear reverse flag to start
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {
+            RC_Channel[0].reversed = false;
+        }
 
         // Start green LED blinking for stage three: three blinks every 1200 ms
-        GreenBlinker = StartBlinking_ms(GreenLED, 3, 1200);    // Blip the GreenLED three times every 1200ms
+        bs.interval[0] = 100;               // On
+        bs.interval[1] = 90;                // Off
+        bs.interval[2] = 100;               // On
+        bs.interval[3] = 90;                // Off
+        bs.interval[4] = 100;               // On
+        bs.interval[5] = 1200;              // Off
+        bs.repeat = true;
+        GreenLED.StreamBlink(bs, 6);        // 6 steps in the stream
+        
         StartWaiting_sec(6); // For the first bit of time we don't take any readings, this lets the user get the sticks centered
         Serial.println(F("Reading..."));
         while (!TimeUp)
-        {    timer.run(); }
-        
+        {    PerLoopUpdates(); }
+
         StartWaiting_sec(4); // Now for the next four seconds we check the sticks
         do
         {    
-            // Add to our readings 
-            TotThrottlePulse += pulseIn(ThrottleChannel_Pin, HIGH, ServoTimeout);  
-            TotTurnPulse += pulseIn(SteeringChannel_Pin, HIGH, ServoTimeout);  
-            TotChannel3Pulse += pulseIn(Channel3_Pin, HIGH, ServoTimeout);  
-            // Increment count
+            delayWhilePolling(100);
+            TotThrottlePulse += RC_Channel[0].pulse;  
+            TotTurnPulse += RC_Channel[1].pulse;
+            TotChannel3Pulse += RC_Channel[2].pulse;
+            // Increment reading count
             Count++;
-            delay(50);
-           // Refresh the timer
-            timer.run();
         }
         while (!TimeUp);    // Keep looping until time's up
-        StopBlinking(GreenBlinker);
+        GreenLED.stopBlinking();
 
         // Get the average of our readings
         TotThrottlePulse /= Count;
         TotTurnPulse /= Count;
         TotChannel3Pulse /= Count;
 
+        /*
         if (DEBUG) 
         {                        
             Serial.print(F("Throttle Avg: "));
@@ -256,47 +255,49 @@ int GreenBlinker;                        // We'll use this to create a SimpleTim
             Serial.print(F("Channel3 Avg: "));
             Serial.println(TotChannel3Pulse);
         }
+        */
         
         // Decide if the channel is reversed, and do a sanity check as well
         // Throttle stick was held up, should have been long pulse. If not, reverse
-        if ((TotThrottlePulse < 1300) && (TotThrottlePulse > MinPossiblePulse))  { ThrottleChannelReverse = true; }
+        if ((TotThrottlePulse < 1300) && (TotThrottlePulse > PULSE_WIDTH_ABS_MIN))  { RC_Channel[0].reversed = true; }
         // Turn stick was held right, should have been long pulse. If not, reverse
-        if ((TotTurnPulse < 1300) && (TotTurnPulse > MinPossiblePulse))          { TurnChannelReverse = true;     }
+        if ((TotTurnPulse < 1300) && (TotTurnPulse > PULSE_WIDTH_ABS_MIN))          { RC_Channel[1].reversed = true;     }
         // We consider on to be high, should have been long pulse. If not, reverse
-        if ((TotChannel3Pulse < 1300) && (TotChannel3Pulse > MinPossiblePulse))  { Channel3Reverse = true;        }
+        if ((TotChannel3Pulse < 1300) && (TotChannel3Pulse > PULSE_WIDTH_ABS_MIN))  { RC_Channel[2].reversed = true;        }
         
        // Save values to EEPROM
-        eeprom_write(ThrottleChannelReverse, E_ThrottleChannelReverse);
-        eeprom_write(TurnChannelReverse, E_TurnChannelReverse);
-        eeprom_write(Channel3Reverse, E_Channel3Reverse);     
+        eeprom_write(RC_Channel[0].reversed, E_ThrottleChannelReverse);
+        eeprom_write(RC_Channel[1].reversed, E_TurnChannelReverse);
+        eeprom_write(RC_Channel[2].reversed, E_Channel3Reverse);     
 
         Serial.println();
         Serial.println(F("Stage 3 Results - Channel reversed"));
-        Serial.print(F("Throttle: "));
-        PrintTrueFalse(ThrottleChannelReverse);
-        Serial.print(F("Turn: "));
-        PrintTrueFalse(TurnChannelReverse);
-        Serial.print(F("Ch3: "));
-        PrintTrueFalse(Channel3Reverse);
-
+        Serial.println(F("Channel       Reversed"));
+        PrintLine(_line_width);
+        for (uint8_t i=0; i<NUM_RC_CHANNELS; i++)
+        {
+            PrintChannelName(i, true);  // True for padding after the word
+            PrintLineYesNo(RC_Channel[i].reversed);
+        }
         Serial.println();
-        Serial.println(F("STAGE 3 COMPLETE"));
-        Serial.println();      
+        Serial.println();        
         Serial.println();
 
 
         // Transition to Stage End:
-        GreenLedOff();
-        delay(2000);
-        GreenLedOn();
-        delay(3000);
-        GreenLedOff();
+        GreenLED.off();
+        delayWhilePolling(2000);
+        GreenLED.on();
+        delayWhilePolling(3000);
+        GreenLED.off();
 
     // End Setup
     Serial.println(F("--- END SETUP ---")); 
     Serial.println();
-    RedLedOff();       
+    Serial.println();
+    RedLED.off();       
 
 }
+
 
 

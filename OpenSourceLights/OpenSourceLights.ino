@@ -1,7 +1,7 @@
  /*
  * Open Source Lights   An Arduino-based program to control LED lights on RC vehicles. 
- * Version:             4.01
- * Last Updated:        03/12/2021
+ * Version:             5.01
+ * Last Updated:        04/4/2021
  * Copyright 2011       Luke Middleton
  *
  * For more information, see the RCGroups thread: 
@@ -12,282 +12,147 @@
  * 
  *
  * To compile select               Tools -> Board     -> Arduino Duemilanove or Diecimila or Nano
- * Also select correct processor   Tools -> Processor -> ATmega328
- *
- *
- * CREDITS!    CREDITS!    CREDITS!
- *----------------------------------------------------------------------------------------------------------------------------------------------------->
- * Several people have contributed code to this project
- *
- * LukeZ                March 2021 - added a new state called "No Turn" as opposed to right or left turn, which already existed. This now creates three
- *                          states on the steering channel, but the user does not have to connect their steering channel to this input - they could 
- *                          connect any other channel from their radio and therefore have a second, general-purpose 3 position switch for whatever they want
- * Wombii               RCGroups username Wombii
- *                          October 2019 - light fades are now handled incrementally instead of sequentially, which means that turn signals for exmaple
- *                          no longer occur one after the other but at the same time. 
- * Wombii               RCGroups username Wombii 
- *                          February 2019 - submitted code to average (smooth) incoming RC commands for those experiencing glitching. It can be enabled for 
- *                          any channel on the AA_UserConfig tab. See: https://www.rcgroups.com/forums/showthread.php?1539753-Open-Source-Lights-Arduino-based-RC-Light-Controller/page57#post41222591
- * Richard & Nick       RCGroups username "Rbhoogenboom" and "NickSegers"
- *                          June 2016 - created an Excel file to simplify the light setups. It will automatically generate the entire AA_LIGHT_SETUP file. 
- *                          Download from the first post of the thread linked above. 
- * Sergio Pizzotti      RCGroups username "wormch"
- *                          March 2015 - Made several impressive changes specifically for drift cars. Wrote all the code related to the backfiring and Xenon effects. 
- *                          Made ChangeSchemeMode more user-friendly, it can only be entered after the car has been stopped several seconds. 
- *                          Also fixed some bugs and taught me the F() macro!
- * Patrik               RCGroups username "Orque"
- *                          March 2015 - Expanded the Channel 3 functionality to read up to a 5 position switch (previously only worked to 3 positions)        
- * Jens                 RCGroups username "learningarduino"
- *                          October 2014 - Fixed bugs related to pin initialization and debug printing. 
- * Peter                RCGroups username "4x4_RC_Pit"
- *                          September 2014 - Fixed several bugs in the RadioSetup routine. Also the first person to post a video of OSL in action.
- * JChristensen         We are using Christensen's button library unchanged. It has been renamed from Button to OSL_Button simply because there are many Arduino
- *                      button libraries, and we don't want the install of this one to conflict with others you may already have. See JChristensen's project page here:
- *                      https://github.com/JChristensen/Button
- *
- * Open Source Lights is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License v3 as published by
- * the Free Software Foundation (http://www.gnu.org/licenses/)
+ * Also select correct processor   Tools -> Processor -> ATmega328P
+ *                                 If you have problems writing to the device, try Tools -> Processor -> Atmega328P (Old Bootloader)
  *
 */
-
 
 // ====================================================================================================================================================>
 //  INCLUDES 
 // ====================================================================================================================================================>
     #include "AA_UserConfig.h"
-    #include "Defines.h"
-    #include <OSL_SimpleTimer.h>
-    #include <EEPROM.h>
-    #include <OSL_Button.h>    // By JChristensen. See: https://github.com/JChristensen/Button Renamed from Button to OSL_Button simply so it won't conflict with other button libraries. 
-    #include <avr/eeprom.h>
-    #include <avr/pgmspace.h>
+    #include "src/OSL_Settings/OSL_Settings.h"
+    #include "src/elapsedMillis/elapsedMillis.h"
+    #include "src/OSL_Button/OSL_Button.h"  // By JChristensen. See: https://github.com/JChristensen/Button Renamed from Button to OSL_Button so it won't conflict with other button libraries. 
+    #include "src/OSL_LedHandler/OSL_LedHandler.h"
+    #include "src/OSL_SimpleTimer/OSL_SimpleTimer.h"
+    #include "src/OSL_PinChangeInterrupt/PinChangeInterrupt.h"
 
    
 // ====================================================================================================================================================>
 //  GLOBAL VARIABLES
 // ====================================================================================================================================================>
-    // Useful names 
+
+    // Hardware version
+    // -------------------------------------------------------------------------------------------------------------------------------------------------->                
+        uint8_t HardwareVersion =             1;                // We will detect the actual hardware version later in Setup, this just initializes to something.
+
+    // Startup
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        const int NA                   =    -1;                 // For each of the 8 states the light can have the following settings: On, Off, NA, Blink, FastBlink, or Dim. On/Off are defined below
-        const int BLINK                =    -2;                 // These give us numerical values to these names which makes coding easier, we can just type in the name instead of the number. 
-        const int FASTBLINK            =    -3;
-        const int SOFTBLINK            =    -4;
-        const int DIM                  =    -5;
-        const int FADEOFF              =    -6;
-        const int XENON                =    -7;
-        const int BACKFIRE             =    -8;
-        
-        const byte ON = 1;
-        const byte OFF = 0;
-        const byte YES = 1;
-        const byte NO = 0;
-        const byte PRESSED = 0;                                 // Used for buttons pulled-up to Vcc, who are tied to ground when pressed
-        const byte RELEASED = 1;                                // Used for buttons pulled-up to Vcc, who are tied to ground when pressed
+        boolean Startup                  = true;                // This lets us run a few things in the main loop only once instead of over and over
 
-    // SIMPLE TIMER 
+    // Objects
+    // -------------------------------------------------------------------------------------------------------------------------------------------------->            
+        OSL_LedHandler                   RedLED;
+        OSL_LedHandler                 GreenLED;
+        OSL_LedHandler  LightOutput[NumLights];                // LED handler for each output (NUM_LIGHT_OUTPUTS is defined in OSL_Settings.h)
+        OSL_Button                  InputButton;                // Button object, will get set later in Setup() when we know what hardware version we are running on.
+
+    // Simple Timer
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        OSL_SimpleTimer                   timer;                 // Instantiate a SimpleTimer named "timer"
-        boolean TimeUp                 =  true;
-
-    // STARTUP
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        boolean Startup                =  true;                 // This lets us run a few things in the main loop only once instead of over and over
-
-    // DRIVING
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        boolean Braking                = false;                 // Are we braking            
-        boolean Decelerating           = false;                 // Are we sharply decelerating 
-        boolean Accelerating           = true;                  // Are we sharply accelerating
-        boolean StoppedLongTime        = false;                 // Have we been stopped for a long time (actual length of time set on the UserConfig tab - LongStopTime_mS)
-
-        typedef char DRIVEMODES; 
-        #define UNKNOWN      0
-        #define STOP         1
-        #define FWD 	     2
-        #define REV          3
-        #define LAST_MODE    REV
-
-        const __FlashStringHelper *printMode(DRIVEMODES Type);     //Returns a character string that is name of the drive mode.
-        
-        // Little function to help us print out actual drive mode names, rather than numbers. 
-        // To use, call something like this:  Serial.print(printMode(DriveModeCommand));
-        const __FlashStringHelper *printMode(DRIVEMODES Type) {
-            if(Type>LAST_MODE) Type=UNKNOWN;
-            const __FlashStringHelper *Names[LAST_MODE+1]={F("UNKNOWN"),F("STOP"),F("FORWARD"),F("REVERSE")};
-            return Names[Type];
-        };
-
-
-        // Throttle
-        int ThrottleCommand            =     0;                 // A mapped value of ThrottlePulse to (0, MapPulseFwd/Rev) where MapPulseFwd/Rev is the maximum FWD/REV speed (100, or less if governed)
-        int ThrottlePulse;                                      // Positive = Forward, Negative = Reverse <ThrottlePulseCenter - ThrottlePulseMin> to <0> to <ThrottlePulseCenter + ThrottlePulseMax>
-        int ThrottlePulseMin;                                   // Will ultimately be determined by setup procedure to read max travel on stick, or from EEPROM if setup complete
-        int ThrottlePulseMax;                                   // Will ultimately be determined by setup procedure to read max travel on stick, or from EEPROM if setup complete
-        int ThrottlePulseCenter;                                // EX: 1000 + ((2000-1000)/2) = 1500. If Pulse = 1000 then -500, 1500 = 0, 2000 = 500
-        int ThrottleCenterAdjust       =     0;                 // If small throttle commands do not result in movement due to gearbox/track resistance, increase this number. FOR NOW, LEAVE AT ZERO. IF SET, MUST BE SMALLER THAN THROTTLEDEADBAND
-        boolean ThrottleChannelReverse;                         // Can be used to reverse the throttle channel if they don't have reversing on radio
-        int MaxFwdSpeed                =   100;                 // 
-        int MaxRevSpeed                =  -100;                 // 
-
-        // Steering
-        int TurnCommand                =     0;                 // A mapped value of ThrottlePulse from (TurnPulseMin/TurnPulseMax) to MaxLeft/MaxRight turn (100 each way, or less if governed)
-        int TurnPulse;                                          // Positive = Right, Negative = Left <TurnPulseCenter - TurnPulseMin> to <0> to <TurnPulseCenter + TurnPulseMax>
-        int TurnPulseMin;                                       // Will ultimately be determined by setup procedure to read max travel on stick, or from EEPROM if setup complete
-        int TurnPulseMax;                                       // Will ultimately be determined by setup procedure to read max travel on stick, or from EEPROM if setup complete
-        int TurnPulseCenter;                                    // EX: 1000 + ((2000-1000)/2) = 1500. If Pulse = 1000 then -500, 1500 = 0, 2000 = 500
-        int TurnCenterAdjust           =     0;                 // Leave at ZERO for now
-        boolean TurnChannelReverse;                             // Can be used to reverse the steering channel if they don't have reversing on radio
-        int MaxRightTurn               =   100;                 // 
-        int MaxLeftTurn                =  -100;
-        boolean TurnSignal_Enable      =  true;                 // If the user decides to restrict turn signals only to when the car is stopped, they can further add a delay that begins
-                                                                // when the car first stops, and until this delay is complete, the turn signals won't come on. This flag indicates if the delay
-                                                                // is up. Initialize to true, otherwise turn signals won't work until the car has driven forward once and stopped.
-        int TurnSignalOverride         =     0;                 // The other situation we want to modify the turn signal is when starting from a stop, while turning. In this case we leave the turn signals on
-                                                                // for a period of time even after the car has started moving (typically turn signals are disabled while moving). This mimics a real car where
-                                                                // the turn signal isn't cancelled until after the steering wheel turns back the opposite way. In our case we don't check the steering wheel, 
-                                                                // we just wait a short amount of time (user configurable in AA_UserConfig.h, variable TurnFromStartContinue_mS)
-
-        // Channel 3
-        int Channel3Pulse;                                      // 
-        int Channel3PulseMin;        
-        int Channel3PulseMax;
-        int Channel3PulseCenter;
-        int Channel3                   =   OFF;                 // State of the Channel 3 switch: On (1), Off (0), Disconnected (-1)
-        boolean Channel3Reverse;
-        #define Pos1                         0                  // Position defines for Channel 3 switch (can be up to 5 positions)
-        #define Pos2                         1
-        #define Pos3                         2
-        #define Pos4                         3
-        #define Pos5                         4
-    
-    // LIGHTS 
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        int CurrentScheme;                                      // Indicates which scheme is presently selected and active. Number from 1 to NumSchemes. 
-                                                                // Note that the actual schemes are zero-based (0 to NumSchemes-1) but don't worry about that,
-                                                                // the code takes care of it. 
-        #define NumLights                    8                  // The number of light outputs available on the board
-        #define NumStates                    15                 // There are 14 possible states a light can be in: 
-                                                                // - Mode 1, Mode 2, Mode 3, Mode 4, Mode 5 (all from Channel3 switch), 
-                                                                // - Forward, Reverse, Stop, Stop Delay, Brake (from Throttle Channel), 
-                                                                // - Right Turn, Left Turn (from Turn Channel)
-                                                                // - Accelerating - 
-                                                                // - Decelerating - special state that occurs on heavy deceleration (from Throttle Channel)
-        const byte Mode1               =     0;                 // Channel 3 in 1st position
-        const byte Mode2               =     1;                 // Channel 3 in 2nd position
-        const byte Mode3               =     2;                 // Channel 3 in 3rd position
-        const byte Mode4               =     3;                 // Channel 3 in 4th position
-        const byte Mode5               =     4;                 // Channel 3 in 5th position        
-        const byte StateFwd            =     5;                 // Moving forward
-        const byte StateRev            =     6;                 // Moving backwards
-        const byte StateStop           =     7;                 // Stopped
-        const byte StateStopDelay      =     8;                 // Stopped for a user-defined length of time
-        const byte StateBrake          =     9;                 // Braking
-        const byte StateRT             =     10;                // Right turn
-        const byte StateLT             =     11;                // Left turn
-        const byte StateNT             =     12;                // "Neutral" turn, ie, no turn
-        const byte StateAccel          =     13;                // Acceleration
-        const byte StateDecel          =     14;                // Deceleration
-       
-        int ActualDimLevel;                                     // We allow the user to enter a Dim level from 0-255. Actually, we do not want them using numbers 0 or 1. The ActualDimLevel corrects for this.
-                                                                // In practice, it is unlikely a user would want a dim level of 1 anyway, as it would be probably invisible. 
-        int LightPin[NumLights] = {9,10,11,6,5,3,15,16};        // These are the Arduino pins to the 8 lights in order from left to right looking down on the top surface of the board. 
-                                                                // Note that the six Arduino analog pins can be referred to by numbers 14-19
-        
-        int LightSettings[NumLights][NumStates];                // An array to hold the settings for each state for each light. 
-        int PriorLightSetting[NumLights][NumStates];            // Sometimes we want to temporarily change the setting for a light. We can store the prior setting here, and revert back to it when the temporary change is over.
-        
-        // With changes made by Wombii in October 2019 several of these settings are no longer needed
-//        int Dimmable[NumLights] = {1,1,1,1,1,1,0,0};            // This indicates which of these pins are capable of ouputting PWM, in order. PWM-capable pins on the Arduino are 3, 5, 6, 9, 10, 11
-                                                                // Dimmable must be true in order for the light to be capable of DIM, FADEOFF, or XENON settings
-//        int PWM_Step[NumLights] = {0,0,0,0,0,0,0,0};            // What is the current PWM value of each light. 
-
-        // FadeOff effect
-//        int FadeOff_EffectDone[NumLights] = {0,0,0,0,0,0,0,0};  // For each light, if = 1, then the Fade  effect is done, don't do it again until cleared (Fade_EffectDone = 0)
-
-        // Xenon effect 
-        int Xenon_EffectDone[NumLights] = {0,0,0,0,0,0,0,0};    // For each light, if = 1, then the Xenon effect is done, don't do it again until cleared (Xenon_EffectDone = 0)
-//        int Xenon_Step[NumLights]       = {0,0,0,0,0,0,0,0};    // Save the current step variable for the Xenon light effect
-//        unsigned long Xenon_millis[NumLights] = {0,0,0,0,0,0,0,0};
-//        unsigned long Xenon_interval    = 25;                   // The interval between the various step of the Xenon effect
-
-        // Backfire effect
-        unsigned long backfire_interval;                        // Will save the random interval for the backfire effect
-        unsigned long backfire_timeout;                         // Will save the random timeout interval to turn off the LED
-        unsigned long Backfire_millis  =  0;                    // will store last time LED was updated
-        boolean canBackfire            = false;                 // Is the backfiring effect currently active?
-
-        // Overtaking effect
-        boolean Overtaking             = false;
-        
-        // Blinking effect
-        boolean Blinker                =  true;                 // A flip/flop variable used for blinking
-        boolean FastBlinker            =  true;                 // A flip/flop variable used for fast blinking
-        boolean IndividualLightBlinker[NumLights] = {true, true, true, true, true, true, true, true};   // A flip/flop variable but this time one for each light. Used for SoftBlink.
-
-        // Wombiii timing array
-        byte specialTimingArray[3][4] = {
-                                            {1,255,blinkLoopsPerCycle,blinkLoopsOn}, 
-                                            {1,255,softblinkLoopsPerCycle,softblinkLoopsOn},
-                                            {1,255,fastblinkLoopsPerCycle,fastblinkLoopsOn}
-                                        };    
-
-
-    // RC CHANNEL INPUTS
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        const byte ThrottleChannel_Pin =     2;                 // The Arduino pin connected to the throttle channel input
-        const byte SteeringChannel_Pin =    17;                 // The Arduino pin connected to the steering channel input (this is the same as saying pin A3)
-        const byte Channel3_Pin        =     4;                 // The Arduino pin connected to the Channel 3 input
-        boolean Failsafe               = false;                 // If we loose contact with the Rx this flag becomes True
-        unsigned long ServoTimeout     = 30000;                 // Value in microseconds (uS) - length of time to wait for a servo pulse. Measured on Eurgle/HK 3channel at ~20-22ms between pulses
-                                                                // Up to version 2.03 of OSL code this value was 21,000 (21ms) and it worked fine. However with the release of Arduino IDE 1.6.5, 
-                                                                // something has changed about the pulseIn function, or perhaps the way it is compiled. At 21ms, pulseIn would return 0 every other read.
-                                                                // Increasing the timeout to 30ms seems to have fixed it. LM - 7/15/2015
-        int PulseMin_Bad               =   700;                 // Pulse widths lower than this amount are considered bad 
-        int PulseMax_Bad               =  2300;                 // Pulse widths greater than this amount are considered bad
- 
-    // BOARD OBJECTS
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        const byte GreenLED            =    18;                 // The Arduino pin connected to the on-board Green LED (this is the same as saying pin A4)
-        const byte RedLED              =    19;                 // The Arduino pin connected to the on-board Red LED (this is the same as saying pin A5) 
-        const byte SetupButton         =    14;                 // The Arduino pin connected to the on-board push button (this is the same as saying pin A0) 
-        // Button Object
-        OSL_Button InputButton = OSL_Button(SetupButton, true, true, 25);   // Initialize a button object. Set pin, internal pullup = true, inverted = true, debounce time = 25 mS
-
-    // CHANGE-SCHEME-MODE MENU VARIABLES
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        boolean canChangeScheme     = false;                    // Are we allowed to enter Change Scheme Mode? (This is set to true after being in the STOP state for several seconds)
-        unsigned int BlinkOffID;                                // SimpleTimer ID number for the blinking lights
-        static boolean Blinking;                                // Are the lights blinking? 
-        static boolean State;                                   // If blinking, are they blinking on (true) or off (false)? 
-        static boolean PriorState;                              // Blinking state in the prior iteration
-        static int TimesBlinked;                                // How many times have the lights blinked
-        static boolean ChangeSchemeMode = false;                    // A flag to indicate if we are in Change-Scheme-Mode or not
+        OSL_SimpleTimer                   timer;                // Instantiate a SimpleTimer named "timer"
+        boolean TimeUp                   = true;
 
     // EEPROM
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        const long EEPROM_Init         = 0xAA43;                // Change this any time the EEPROM content changes
+        const long EEPROM_Init         = 0xDF03;                // Change this any time the EEPROM content changes
         struct __eeprom_data {                                  // __eeprom_data is the structure that maps all of the data we are storing in EEPROM
           long E_InitNum;                                       // Number that indicates if EEPROM values have ever been initialized 
-          int E_ThrottlePulseMin;
-          int E_ThrottlePulseMax;
-          int E_ThrottlePulseCenter;
-          int E_TurnPulseMin;
-          int E_TurnPulseMax;
-          int E_TurnPulseCenter;
-          int E_Channel3PulseMin;
-          int E_Channel3PulseMax;
-          int E_Channel3PulseCenter;
+          int16_t E_ThrottlePulseMin;
+          int16_t E_ThrottlePulseMax;
+          int16_t E_ThrottlePulseCenter;
+          int16_t E_TurnPulseMin;
+          int16_t E_TurnPulseMax;
+          int16_t E_TurnPulseCenter;
+          int16_t E_Channel3PulseMin;
+          int16_t E_Channel3PulseMax;
+          int16_t E_Channel3PulseCenter;
           boolean E_ThrottleChannelReverse;
           boolean E_TurnChannelReverse;
           boolean E_Channel3Reverse;
-          int E_CurrentScheme;
+          uint8_t E_CurrentScheme;
         };
 
-    // NEW LIGHT SWITCHING - Wombii
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        unsigned long runCount = 0;
+    // RC Channel defines
+    // -------------------------------------------------------------------------------------------------------------------------------------------------->            
+        struct _rc_channel {
+            uint8_t  pin;                                       // Pin number of channel
+            uint8_t  channel;                                   // What channel is this (0 = throttle, 1 = steering, 2 = Channel 3)
+            char     state;                                     // State of this individual channel (acquiring, synched, lost)
+            uint16_t rawPulseWidth;                             // Unchecked pulse-width, may or may not be valid
+            int16_t  pulse;                                     // Actual pulse-width in uS, typically in the range of 1000-2000 (sanity checked). Although it should always be positive, this needs to be signed for smoothing to work.
+            int16_t  pulseMin;                                  // Minimum pulse width of incoming channel, as saved during Radio Setup
+            int16_t  pulseCenter;                               // Center pulse width of incoming channel, as saved during Radio Setup
+            int16_t  pulseMax;                                  // Maximum pulse width of incoming channel, as saved during Radio Setup
+            uint8_t  deadband;                                  // Deadband around center where changes are ignored
+            boolean  readyForUpdate;                            // Set to true if a signal has been read (saved to rawPulseWidth) and we are ready for the main loop to process
+            boolean  updated;                                   // Has the value on this channel changed since the last check?
+            boolean  reversed;                                  // Should this channel be reversed
+            int8_t   mappedCommand;                             // For throttle and steering channels, the current command (adjusted for known center and endpoint settings, and mapped to a range of -100 to 100)
+            uint8_t  numSwitchPos;                              // In the case of a digital channel, how many switch positions can it read. 
+            uint8_t  switchPos;                                 // In the case of Channel 3, what switch "position" is the channel presently in
+            boolean  smooth;                                    // Apply averaging to the incoming value
+            int16_t  smoothedValue;                             // Remember the last value to use for smoothing (we smooth the pulse, not the mapped command/switch position, so values are always positive)
+            uint32_t lastEdgeTime;                              // Timing variable for measuring pulse width
+            uint32_t lastGoodPulseTime;                         // Time last signal was received for this channel
+            uint8_t  acquireCount;                              // How many pulses have been acquired during acquire state
+            boolean  Digital;                                   // Is this a digital channel (switch input) or an analog (variable) input?             
+        }; 
+        _rc_channel RC_Channel[NUM_RC_CHANNELS];
 
+        boolean Failsafe                = false;                // If we loose contact with the Rx this flag becomes true
+        char RC_State =  RC_SIGNAL_UNINITIALIZED;               // State of the entire radio system (as opposed to per-channel states above)
+        char Last_RC_State = RC_SIGNAL_UNINITIALIZED;           // Last state. The uninitialized state is used only once, at startup, afterwards it is either acquiring, synched, or lost
+        int RxSignalLostTimerID             = 0;                // Timer used to flash the lights if the radio signal is lost
+        int8_t ThrottleCommand              = 0;                // Discrete variables are also useful, we will map these to the correct channel inputs in ProcessRCCommand()
+        int8_t TurnCommand                  = 0;
+        uint8_t Channel3Command             = 0;                        
+        int8_t ThrottleCommand_Previous     = 0;                // We keep a second set so we can compare and determine when a command has changed
+        uint8_t Channel3Command_Previous    = 0;
+        int8_t TurnCommand_Previous         = 0;
+
+    // Driving
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>
+        boolean Braking                 = false;                // Are we braking       
+        boolean Braking_Previous        = false;                // Allows us to track changes     
+        boolean Decelerating            = false;                // Are we sharply decelerating 
+        boolean Accelerating             = true;                // Are we sharply accelerating
+        boolean StoppedLongTime         = false;                // Have we been stopped for a long time (actual length of time set on the AA_UserConfig tab - LongStopTime_mS)
+        int8_t Direction              = NO_TURN;                // As opposed to command which indicates how much we are turning, this just tells us if we are in a right turn, left turn, or no turn.
+        int8_t Direction_Previous     = NO_TURN;
+        boolean TurnSignal_Enable       =  true;                // If the user decides to restrict turn signals only to when the car is stopped, they can further add a delay that begins
+                                                                // when the car first stops, and until this delay is complete, the turn signals won't come on. This flag indicates if the delay
+                                                                // is up. Initialize to true, otherwise turn signals won't work until the car has driven forward once and stopped.
+        int8_t TurnSignalOverride           = 0;                // The other situation we want to modify the turn signal is when starting from a stop, while turning. In this case we leave the turn signals on
+                                                                // for a period of time even after the car has started moving (typically turn signals are disabled while moving). This mimics a real car where
+                                                                // the turn signal isn't cancelled until after the steering wheel turns back the opposite way. In our case we don't check the steering wheel, 
+                                                                // we just wait a short amount of time (user configurable in AA_UserConfig.h, variable TurnFromStartContinue_mS)
+    // Light Settings
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>
+        uint8_t LightSettings[NumLights][NumStates];           // An array to hold the settings for each state for each light. 
+        uint8_t CurrentLightSetting[NumLights];                // What state is the light in presently
+        boolean canBackfire             = false;                // Is the backfiring effect currently active?
+        uint16_t backfire_timeout;                              // Will save the random timeout interval to turn off the LED
+        int BackfireTimerID                 = 0;                // Backfire event timer ID
+        boolean Overtaking              = false;                // Overtaking effect
+        int OvertakeTimerID                 = 0;                // Overtaking event timer ID
+
+    // Schemes & Change-Scheme-Mode
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>
+        uint8_t CurrentScheme;                                  // Indicates which scheme is presently selected and active. Number from 1 to NumSchemes (set in AA_UserConfig.h, though it must also match
+                                                                // the number of schemes literally defined in AA_LIGHT_SETUP) 
+                                                                // Note that the actual schemes are zero-based (0 to NumSchemes-1) but don't worry about that, the code takes care of it. 
+        boolean canChangeScheme         = false;                // Are we allowed to enter Change Scheme Mode? (This is set to true after being in the STOP state for several seconds)
+        int CSM_BlinkOffTimerID             = 0;                // SimpleTimer ID number for the blinking lights
+        boolean CSM_Blinking;                                   // Are the change-scheme-mode lights blinking? 
+        boolean CSM_State;                                      // If blinking, are they blinking on (true) or off (false)? 
+        boolean CSM_PriorState;                                 // Blinking state in the prior iteration
+        uint8_t CSM_TimesBlinked;                               // How many times have the lights blinked
+        boolean ChangeSchemeMode        = false;                // A flag to indicate if we are in Change-Scheme-Mode or not
+
+    // Shelf-queen mode
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>
+        boolean shelfQueenMode          = false;                // A flag to indicate if we are in shelf-queen mode or not
 
 
 
@@ -296,55 +161,85 @@
 // ====================================================================================================================================================>
 void setup()
 {
-    // SERIAL
+    // Serial
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
         Serial.begin(BaudRate);  
 
-    // PINS
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        pinMode(RedLED, OUTPUT);                                // Set RedLED pin to output
-        pinMode(GreenLED, OUTPUT);                              // Set GreenLED pin to output
-        RedLedOff();                                            // Turn off board LEDs to begin with
-        GreenLedOff();
+    // Hardware Version
+    // -------------------------------------------------------------------------------------------------------------------------------------------------->
+        // Let's figure out which version of hardware we're running on
+        pinMode(pin_VCHECK_A, INPUT_PULLUP);
+        pinMode(pin_VCHECK_B, INPUT_PULLUP);
+        delay(10);  // Wait a bit before reading
+        if      ( digitalRead(pin_VCHECK_A) &&  digitalRead(pin_VCHECK_B)) HardwareVersion = 1; // A high, B high - original design board (where in fact both pins are connected to nothing, it is the internal pullup that makes them high)
+        else if ( digitalRead(pin_VCHECK_A) && !digitalRead(pin_VCHECK_B)) HardwareVersion = 2; // A high, B low  - hardware version 2
+        else if (!digitalRead(pin_VCHECK_A) &&  digitalRead(pin_VCHECK_B)) HardwareVersion = 1; // A low,  B high - hardware version x (unspecified, keep at version 1 for now)
+        else if (!digitalRead(pin_VCHECK_A) && !digitalRead(pin_VCHECK_B)) HardwareVersion = 1; // A low,  B low  - hardware version x (unspecified, keep at version 1 for now) 
 
-        for (int i=0; i<NumLights; i++)                             
-        {
-            pinMode(LightPin[i], OUTPUT);                       // Set all the external light pins to outputs
-            TurnOffLight(i);                                    // Start with all lights off                        
-        }
-    
-        pinMode(ThrottleChannel_Pin, INPUT_PULLUP);             // Set these pins to input, with internal pullup resistors enabled
-        pinMode(SteeringChannel_Pin, INPUT_PULLUP);
-        pinMode(Channel3_Pin, INPUT_PULLUP);
-        pinMode(SetupButton, INPUT_PULLUP);    
-
-    // CONNECT TO RECEIVER
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        Failsafe = true;                                        // Set failsafe to true
-        GetRxCommands();                                        // If a throttle signal is measured, Failsafe will turn off
-            
-    // LOAD VALUES FROM EEPROM    
+    // Load values from EEPROM  
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
         long Temp;
         eeprom_read(Temp, E_InitNum);                           // Get our EEPROM Initialization value
         if(Temp != EEPROM_Init)                                 // If EEPROM has never been initialized before, do so now
         {    Initialize_EEPROM();  }
         else
-        {    Load_EEPROM();        }                            // Otherwise, load the values from EEPROM
+        {    Load_EEPROM();        }                            // Otherwise, load the values from EEPROM. Note this is only for non-channel values, 
+                                                                // channel-EEPROM values will get assigned below in InitializeRCChannels();
+    // RC Inputs
+    // -------------------------------------------------------------------------------------------------------------------------------------------------->        
+        InitializeRCChannels();                                 // Initialize/clear RC channels
+        EnableRCInterrupts();                                   // Start checking the RC pins for a signal
 
-    // RUN LIGHT SETUP
+    // Initialize lights
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        SetupLights(CurrentScheme);                             // Set the lights to the Scheme last saved in EEPROM
-        FixDimLevel();                                          // Takes care of a bug that only occurs if a user sets the Dim level to 1 (unlikely)
+        SetLightScheme(CurrentScheme);                          // Set the lights to the Scheme last saved in EEPROM
 
-    // INITIATE BACKFIRE settings
+    // Initialize backfire settings
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        // Activate the random Seed and set inital random values. These will be set to new random values each time a backfire event occurs, but 
-        // we need to initialize them for the first event. 
-        randomSeed(analogRead(0));
-        backfire_interval = random(BF_Short, BF_Long);
-        backfire_timeout  = BF_Time + random(BF_Short, BF_Long);
+        // Activate the random Seed and set an inital random value for the deceleration effect. It will be updated to a new 
+        // random value each time a deceleration event occurs, but we need to initialize it for the first event. 
+        if (HardwareVersion == 2) randomSeed(analogRead(pin_HW2_SetupButton));    // When the button is not pressed, this input is left floating, meaning the value could be anything, which is what we want for randomSeed
+        else                      randomSeed(analogRead(pin_HW1_SetupButton));
+        backfire_timeout  = random(BF_Time_Short, BF_Time_Long);
 
+    // Setup light objects
+    // -------------------------------------------------------------------------------------------------------------------------------------------------->        
+        if (HardwareVersion == 1)
+        {
+            RedLED.begin(pin_HW1_RedLED, false);                        
+            GreenLED.begin(pin_HW1_GreenLED, false);
+            LightOutput[0].begin(pin_HW1_Light1, false, true);          // First boolean is whether or not to invert the pin behavior - all these set to false
+            LightOutput[1].begin(pin_HW1_Light2, false, true);          // Second boolean indicates if we are able to analog-write to the pin (is it PWM-able)
+            LightOutput[2].begin(pin_HW1_Light3, false, true);
+            LightOutput[3].begin(pin_HW1_Light4, false, true);
+            LightOutput[4].begin(pin_HW1_Light5, false, true);
+            LightOutput[5].begin(pin_HW1_Light6, false, true);
+            LightOutput[6].begin(pin_HW1_Light7, false, false);         // Outputs 7 & 8 are not PWM-able
+            LightOutput[7].begin(pin_HW1_Light8, false, false);
+            InputButton.begin(pin_HW1_SetupButton, true, true, 25);     // Initialize a button object. Set pin, internal pullup = true, inverted = true, debounce time = 25 mS
+        }
+        else if (HardwareVersion == 2)
+        {
+            RedLED.begin(pin_HW2_RedLED, false);                        
+            GreenLED.begin(pin_HW2_GreenLED, false);
+            LightOutput[0].begin(pin_HW2_Light1, false, true);          // First boolean is whether or not to invert the pin behavior - all these set to false
+            LightOutput[1].begin(pin_HW2_Light2, false, true);          // Second boolean indicates if we are able to analog-write to the pin (is it PWM-able)
+            LightOutput[2].begin(pin_HW2_Light3, false, true);
+            LightOutput[3].begin(pin_HW2_Light4, false, true);
+            LightOutput[4].begin(pin_HW2_Light5, false, true);
+            LightOutput[5].begin(pin_HW2_Light6, false, true);
+            LightOutput[6].begin(pin_HW2_Light7, false, false);         // Outputs 7 & 8 are not PWM-able
+            LightOutput[7].begin(pin_HW2_Light8, false, false);
+            InputButton.begin(pin_HW2_SetupButton, true, true, 25);     // Initialize a button object. Set pin, internal pullup = true, inverted = true, debounce time = 25 mS
+        }        
+        // Start lights in the off state
+        RedLED.off();
+        GreenLED.off();
+        for (uint8_t i=0; i<NumLights; i++)
+        {   
+            LightOutput[i].off();
+            CurrentLightSetting[i] = LS_UNKNOWN;
+        }
 }
 
 
@@ -352,71 +247,143 @@ void setup()
 // ====================================================================================================================================================>
 //  MAIN LOOP
 // ====================================================================================================================================================>
-
 void loop()
 {
-    // LOCAL VARIABLES
+    // Main loop local variables
     // ------------------------------------------------------------------------------------------------------------------------------------------------>    
     // Drive Modes
-    static int DriveModeCommand = UNKNOWN;                      // The Drive Mode presently being commanded by user. At startup we don't know, so initialize to UNKNOWN.
-    static int DriveMode = STOP;                                // As opposed to DriveModeCommand, this is the actual DriveMode being implemented. 
-    static int DriveMode_Previous = STOP;                       // The previous Drive Mode implemented. There is no "previous" when first started, initialize to STOP
-    static int DriveModeCommand_Previous = STOP;                // There is no "previous" command when we first start. Initialize to STOP
-    static int DriveMode_LastDirection = STOP;
-    static boolean DriveModeTransition = false;                 // Are we in the midst of a drive mode transition event? 
-    static int TransitionMode;                                  // Which transition are we doing? 
-    static int ReverseTaps = 0;
-    
-    static int ThrottleCommand_Previous;
-    
-    // Shifting Direction
-    static int DriveFlag = NO;                                  // We start with movement allowed
-    static unsigned long TransitionStart;                       // A marker which records the time when the shift transition begins
-    static unsigned long StopCMDLength;                         // Counter to determine how long we have been commanding Stop
+    static uint8_t DriveModeCommand      = STOP;                // The Drive Mode presently being commanded by user. At startup we don't know, so initialize to UNKNOWN.
+    static uint8_t DriveMode             = STOP;                // As opposed to DriveModeCommand, this is the actual DriveMode being implemented. 
+    static uint8_t DriveMode_Previous    = STOP;                // The previous Drive Mode implemented. There is no "previous" when first started, initialize to STOP
+    static uint8_t DriveModeCommand_Previous = STOP;            // There is no "previous" command when we first start. Initialize to STOP
+    static uint8_t DriveMode_LastDirection = STOP;
 
-    // Stop time
-    static unsigned long TimeStopped;                           // When did we stop - will be used to initiate a delay after stopping before turn signals can be used, or when stop-delay light settings can take effect
+
+    // Driving
+    static boolean canBrake             = false;                // If BrakeAtThrottlePctBelow > 0 (in AA_UserConfig) we may set the brake flag even when moving in forward or reverse
+    static uint32_t TimeStopped;                                // When did we stop - will be used to initiate a delay after stopping before turn signals can be used, or when stop-delay light settings can take effect.
+    static uint32_t StopCMDLength;                              // Counter to determine how long we have been commanding Stop.
+    static uint32_t Last_FWD_Time;                              // Keep track of how recently we were in forward. This will help us know whether to enter the Brake state or not. NOTE: The brake state
+                                                                // will only ever apply if DoubeTapReverse = true. For crawler type ESCs that can go directly into reverse from forward, the only way to get
+                                                                // the brake lights to turn on is to set them to the Stop state. 
+    static uint8_t ReverseTaps              = 0;                // How many times have we gone into reverse - used for ESCs that require tapping reverse twice before the car will move in reverse
+
 
     // Scheme change variables
-    static int MaxTurn;                                         // This will end up being 90 percent of Turn Command, we consider this a full turn
-    static int MinTurn;                                         // This will end up being 10-20 percent of Turn Command, this is the minimum movement to be considered a turn command during Change-Scheme-Mode
-    static byte RightCount = 0;                                 // We use these to count up the number of times the user has cranked the
-    static byte LeftCount = 0;                                  // steering wheel completely over. 
-    static int ChangeModeTime_mS = 2000;                        // Amount of time user has to enter Change-Scheme-Mode 
+    #define CS_MAX_TURN                      90                 // 90 percent of Turn Command, we consider this a full turn for purposes of the change-scheme selection
+    #define CS_MIN_TURN                      20                 // 20 percent of Turn Command, this is the minimum movement to be considered a turn command during Change-Scheme-Mode
+    static byte RightCount                  = 0;                // We use these to count up the number of times the user has cranked the
+    static byte LeftCount                   = 0;                // steering wheel completely over. 
+    #define ChangeModeTime_mS              2000L                // Amount of time user has to enter Change-Scheme-Mode 
     static boolean ChangeSchemeTimerFlag = false;               // Has the timer begun
-    static unsigned int TurnTimerID;                            // An ID for the timer that counts the turns of the wheel                      
-    static int ExitSchemeFlag = 0;                              // A flag to indicate whether or not to exit Change-Scheme-Mode
-    static int TimeToWait_mS = 1200;                            // Time to wait between change-scheme commands (otherwise as long as you held the wheel over it would keep cycling through rapidly)
-    static int TimeToExit_mS = 3000;                            // How long to hold the wheel over until Change-Scheme-Mode is exited
-    static unsigned long ExitStart;                             // Start time of the exit waiting period
+    static int CSM_TurnTimerID;                                 // An ID for the timer that counts the turns of the wheel                      
+    static int8_t ExitSchemeFlag            = 0;                // A flag to indicate whether or not to exit Change-Scheme-Mode
+    #define CSM_TimeToWait_mS              1200L                // Time to wait between change-scheme commands (otherwise as long as you held the wheel over it would keep cycling through rapidly)
+    #define CSM_TimeToExit_mS              3000L                // How long to hold the wheel over until Change-Scheme-Mode is exited
+    static unsigned long CSM_ExitStart;                         // Start time of the exit waiting period
     static boolean TimeoutFlag;
     static boolean HoldFlag; 
     static unsigned long HoldStart;
+    static uint32_t TransitionStart;
 
-    // Backfire
-    static unsigned int BackfireTimerID = 0; 
-    // Overtaking
-    static unsigned int OvertakeTimerID = 0;
 
     // Temp vars
     static unsigned long currentMillis;        
     static boolean WhatState = true;
-    int i;    
-    
-
+   
 
     // STARTUP - RUN ONCE
     // ------------------------------------------------------------------------------------------------------------------------------------------------>    
     if (Startup)
     {       
-        if (DEBUG) { DumpDebug(); }                             // This puts some useful information to the Serial Port
-        
-        timer.setInterval(BlinkInterval, BlinkLights);          // This will call the function BlinkLights every BlinkInterval milliseconds
-        timer.setInterval(FastBlinkInterval, FastBlinkLights);  // This will call the function FastBlinkLights every FastBlinkInterval milliseconds
-        
+        RedLED.off();                                           // Start with these off
+        GreenLED.off();
+
+        if (enableShelfQueenMode)
+        {
+            uint8_t tempScheme; 
+            shelfQueenMode = true;                              // Set this to true temporarily, we need to do this prior to actually entering shelf-queen mode to prevent the radio failsafe handler from messing things up
+            delayWhilePolling(100);                             // Let's give ourselves plenty of time to detect something
+
+            if (RC_State == RC_SIGNAL_UNINITIALIZED)
+            {
+                // Change the scheme to the shelf-queen scheme
+                if (shelfQueenSchemeNumber > NumSchemes) tempScheme = 1; // If the user has entered an invalid scheme number, default to 1
+                else                                     tempScheme = shelfQueenSchemeNumber;
+
+                if (enableShelfQueenDelay)
+                {
+                    // We want to delay some random amount of time before turning the lights on
+                    uint32_t sq_delay; 
+                    sq_delay = random(sqd_Time_Short, sqd_Time_Long);
+                    Serial.print(F("Shelf Queen Mode Delay: ")); Serial.print(((float)sq_delay/1000.0),1); Serial.println(F(" seconds"));
+                    
+                    currentMillis = millis();                   // Save the time
+                    do {
+                        PerLoopUpdates();
+                    } while (((millis() - currentMillis) < sq_delay) && RC_State == RC_SIGNAL_UNINITIALIZED); 
+                }
+
+                if (RC_State != RC_SIGNAL_UNINITIALIZED)
+                {
+                    // The radio was detected while we were waiting, cancel shelf queen mode
+                    shelfQueenMode = false; 
+                }
+    
+                if (shelfQueenMode == true)
+                {
+                    // Ok, we're still good to enter shelf queen mode
+                    if (DEBUG)
+                    {
+                        Serial.println();
+                        Serial.println();
+                        PrintLine(80);
+                        Serial.print(F("SHELF QUEEN MODE - SCHEME ")); Serial.println(tempScheme);
+                        PrintLine(80);
+                    }
+    
+                    // Load the desired scheme
+                    SetLightScheme(tempScheme);
+    
+                    // Set channel 3 to position 1 and set the lights
+                    Channel3Command = ShelfQueenCh3Position; 
+                    SetLights(STOP);
+    
+                    // Keep the onboard LEDs off
+                    RedLED.off();
+                    GreenLED.off();
+    
+                    // Keep polling the radio
+                    do{
+                        PerLoopUpdates();
+                    } while (RC_State == RC_SIGNAL_UNINITIALIZED);
+    
+                    // If we make it to here, a radio signal has been detected.
+                    shelfQueenMode = false;                        // Exit shelf-queen mode
+                    SetLightScheme(CurrentScheme);                 // Go back to CurrentScheme
+    
+                    if (DEBUG)
+                    {                
+                        PrintLine(80);
+                        Serial.print(F("EXIT SHELF QUEEN MODE - REVERT TO SCHEME ")); Serial.println(CurrentScheme);
+                        PrintLine(80);
+                        Serial.println();             
+                        Serial.println(); 
+                    }
+    
+                    // Now proceed as normal...
+                }
+            }
+            else
+            {
+                shelfQueenMode = false;
+            }
+        }
+
+        if (DEBUG) DumpSystemInfo();                            // This puts some useful information to the Serial Port if we have Debug enabled
+
         currentMillis = millis();                               // Initializing some variables 
         TransitionStart = currentMillis;  
-        StopCMDLength = currentMillis;  
         TimeStopped = currentMillis;
         TurnSignal_Enable = false;
         StoppedLongTime = false;
@@ -424,42 +391,22 @@ void loop()
         canChangeScheme = false;    
         ChangeSchemeTimerFlag = false;
         ChangeSchemeMode = false;
-        MaxTurn = (int)((float)MaxRightTurn * 0.9);             // This sets a turn level that is near max, we use sequential back-and-forth max turns to enter Change-Scheme-Mode
-        MinTurn = (int)((float)MaxRightTurn * 0.2);             // This is the minimum amount of steering wheel movement considered to be a command during Change-Scheme-Mode
         RightCount = 0;
         LeftCount = 0;
-
         Startup = false;                                        // This ensures the startup stuff only runs once
-
    }
 
 
 // ETERNAL LOOP
 // ------------------------------------------------------------------------------------------------------------------------------------------------>    
 
-    // New light and radio things - Wombii
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>  
-    
-        runCount++; //loopcounter (Used for the new light switching functions and radio read sequencing
-
-        //Just for testing. Can print the time each loop takes:
-        static unsigned long looptimer = 0;
-        //byte looptimerDelay = 0;
-        looptimer = millis()-looptimer;
-        //if (looptimer > 5 && looptimer < 20) looptimerDelay = 20-looptimer;
-        //Serial.println(looptimer);
-        looptimer = millis();
-        //delay(10);
-        //delay(looptimerDelay);
+    // Per loop updates - things that need to be polled
+        PerLoopUpdates();
 
 
-
-
-    // UPDATE TIMER/BUTTON STATE
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>  
-        timer.run();
-        InputButton.read();
-        
+    // Everything from here on, we only run if we are receiving valid radio commands
+    if (Failsafe == false)
+    {
         
     // USER WANTS TO RUN SETUPS
     // -------------------------------------------------------------------------------------------------------------------------------------------------->
@@ -469,15 +416,11 @@ void loop()
             RadioSetup(); 
         }
 
-    // GET COMMANDS FROM RECEIVER
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-        GetRxCommands();
-
     
     // DETECT IF THE USER WANTS TO ENTER CHANGE-SCHEME-MODE
     // ------------------------------------------------------------------------------------------------------------------------------------------------>    
         // To enter scheme-change-mode, the user needs to turn the steering wheel all the way back and forth at least six times (three each way) in quick succession (within ChangeModeTime_mS milliseconds)
-        if (canChangeScheme && (abs(TurnCommand) >= MaxTurn) && !ChangeSchemeMode)
+        if (canChangeScheme && (abs(TurnCommand) >= CS_MAX_TURN) && !ChangeSchemeMode)
         {    // Here we save how many times they have turned the wheel in each direction. 
             if ((TurnCommand > 0) && (WhatState == false))      
             {   RightCount += 1; 
@@ -490,7 +433,7 @@ void loop()
             
             if (!ChangeSchemeTimerFlag)
             {   ChangeSchemeTimerFlag = true; 
-                TurnTimerID = StartWaiting_mS(ChangeModeTime_mS);
+                CSM_TurnTimerID = StartWaiting_mS(ChangeModeTime_mS);
             }
             
             if (!TimeUp)
@@ -498,7 +441,7 @@ void loop()
                 {   ChangeSchemeTimerFlag = false;
                     RightCount = 0;
                     LeftCount = 0;
-                    timer.deleteTimer(TurnTimerID);
+                    timer.deleteTimer(CSM_TurnTimerID);
                     ChangeSchemeMode = true;                    // The user has turned the steering wheel back and forth at least five times - enter Change-Scheme-Mode                    
                 }
             }
@@ -525,37 +468,39 @@ void loop()
         // If no control movements are made for 20 seconds, the program will automatically exit Change-Scheme-Mode
         if (ChangeSchemeMode)
         {
-            TwinkleLights(2);
-            TimesBlinked = 0;
-            Blinking = true;
-            State = true;
-            PriorState = false;
+            Serial.println();
+            PrintLine(80);
+            Serial.println(F("ENTERING CHANGE-SCHEME MODE")); 
+            PrintLine(80);
+            Serial.print(F("Current Scheme: ")); Serial.println(CurrentScheme);
+            TwinkleLights(2000);
+            CSM_TimesBlinked = 0;
+            CSM_Blinking = true;
+            CSM_State = true;
+            CSM_PriorState = false;
             ExitSchemeFlag = 0;
             TimeoutFlag = false;
             HoldFlag = false;
             do
             {
-                // Read the receiver
-                GetRxCommands();
+                // Polling updates
+                PerLoopUpdates();
 
-                timer.run();
-               
-                if (abs(TurnCommand) >= MaxTurn)                                
-                {   // They are holding the stick completely over - start waiting to see if they want to
-                    // exit Change-Scheme-Mode
+                if (abs(TurnCommand) >= CS_MAX_TURN)                                
+                {   // They are holding the stick completely over - start waiting to see if they want to exit Change-Scheme-Mode
                     if (ExitSchemeFlag == 0)    // If the wait hasn't already begun
                     {   if (TurnCommand > 0)       {ExitSchemeFlag =  1;}    // Here we remember which direction they are holding the steering wheel
                         else if (TurnCommand < 0 ) {ExitSchemeFlag = -1;}
-                        ExitStart = millis();    // Start the wait
+                        CSM_ExitStart = millis();    // Start the wait
                     }
                     else
                     {   // The wait has already begun - check to see if they are still holding full over
-                        if ((ExitSchemeFlag > 0) && (TurnCommand < MaxTurn))  { ExitSchemeFlag = 0; }    // They were holding full right but now they're somewhere less
-                        if ((ExitSchemeFlag < 0) && (TurnCommand > -MaxTurn)) { ExitSchemeFlag = 0; }    // They were holding full left but now theyr'e somewhere less
+                        if ((ExitSchemeFlag > 0) && (TurnCommand < CS_MAX_TURN))  { ExitSchemeFlag = 0; }    // They were holding full right but now they're somewhere less
+                        if ((ExitSchemeFlag < 0) && (TurnCommand > -CS_MAX_TURN)) { ExitSchemeFlag = 0; }    // They were holding full left but now theyr'e somewhere less
                     }
                     TimeoutFlag = false;    // Regardless, we detected movement, so we reset the timeout flag
                 }
-                else if (abs(TurnCommand) >= MinTurn)
+                else if (abs(TurnCommand) >= CS_MIN_TURN)
                 {   if (!HoldFlag)
                     {   HoldFlag = true;
                         HoldStart = millis();
@@ -563,14 +508,16 @@ void loop()
                     ExitSchemeFlag = 0;     // If we make it to here they are no longer trying to exit, so reset
                     if ((millis() - HoldStart) >= 500)
                     {   HoldFlag = false;
-                        if ((millis() - TransitionStart) >= TimeToWait_mS)    // Only change scheme if we've waited long enough from last command
+                        if ((millis() - TransitionStart) >= CSM_TimeToWait_mS)    // Only change scheme if we've waited long enough from last command
                         {   if (TurnCommand > 0) 
                             {   CurrentScheme += 1;
                                 if (CurrentScheme > NumSchemes) { CurrentScheme = 1; }
+                                Serial.print(F("Scheme changed to: ")); Serial.println(CurrentScheme);
                             }
                             else if (TurnCommand < 0)
                             {   CurrentScheme -= 1;
                                 if (CurrentScheme < 1) { CurrentScheme = NumSchemes; }
+                                Serial.print(F("Scheme changed to: ")); Serial.println(CurrentScheme);
                             }
                             TransitionStart = millis();                       // Force them to wait a bit before changing the scheme again
                         }
@@ -581,125 +528,198 @@ void loop()
                 {   // In this case, they are not moving the steering wheel at all. We start the timeout timer
                     if (!TimeoutFlag)
                     {   TimeoutFlag = true;
-                        ExitStart = millis();
+                        CSM_ExitStart = millis();
                     }
                     ExitSchemeFlag = 0; // But we also reset this flag, because they are obviously not holding the wheel all the way over either
                     HoldFlag = false;
                 }
 
-                timer.run();
                 BlinkAllLights(CurrentScheme);                
                 
-                if ((ExitSchemeFlag != 0) && ((millis() - ExitStart) >= TimeToExit_mS))
+                if ((ExitSchemeFlag != 0) && ((millis() - CSM_ExitStart) >= CSM_TimeToExit_mS))
                 {   // User is exiting out of Change-Scheme-Mode
                     ChangeSchemeMode = false;
                 }
-                else if (TimeoutFlag &&  ((millis() - ExitStart) >= 20000))
+                else if (TimeoutFlag &&  ((millis() - CSM_ExitStart) >= 20000L))
                 {   // No movement of steering wheel for 20 seconds - automatic exit
                     ChangeSchemeMode = false;
                 }
             }
             while (ChangeSchemeMode);
-            TwinkleLights(2);
-            SetupLights(CurrentScheme);  // Change the scheme
+            PrintLine(80);
+            Serial.print(F("EXIT CHANGE-SCHEME MODE IN SCHEME: ")); Serial.println(CurrentScheme);
+            PrintLine(80);
+            Serial.println();
+            TwinkleLights(2000);
+            SetLightScheme(CurrentScheme);  // Change the scheme
             SaveScheme_To_EEPROM();      // Save the selection to EEPROM
+            PerLoopUpdates();
         }
 
-    
-    // CALCULATE APPARENT DRIVE MODE
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-        // Figure out what Drive Mode the receiver is indicating
-        DriveModeCommand = ReturnDriveMode(ThrottleCommand); 
+
+    // CALCULATE DRIVE MODE FROM COMMAND - The command and mode are not always the same, if DoubleTapReverse = true
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>
+        DriveModeCommand = ReturnDriveMode(ThrottleCommand);    // Figure out what Drive Mode the receiver is indicating
+
+        switch (DriveModeCommand)
+        {
+            case FWD:                                           
+                DriveMode = FWD;                                // Pretty much all ESCs allow us to go directly into forward
+                ReverseTaps = 0;                                // Reset reverse taps
+                StoppedLongTime = false;                        // Reset the StoppedLongTime flag because we are no longer stopped
+                Last_FWD_Time = millis();                       // Keep track of the most current time we are commanding forward, this will be used to set the brake lights if DoubleTapReverse = true
+                canChangeScheme = false;                        // Also reset the canChangeScheme flag, we don't want to enter ChangeScheme mode while moving forward
+                if (BrakeAtThrottlePctBelow > 0 && canBrake == false && ThrottleCommand > BrakeAtThrottlePctBelow)
+                {   
+                    Braking = false;                            // Since we are above the threshold, we are not now braking
+                    canBrake = true;                            // But as we've exceeded the threshold, we can enable braking so that if we fall back below it the brake State can activate
+                }
+                
+                if (BrakeAtThrottlePctBelow > 0 && canBrake == true && ThrottleCommand <= BrakeAtThrottlePctBelow)
+                {
+                    Braking = true;                             // We are below the threshold, so we can activate the Braking state
+                    canBrake = false;                           // But we also reset the canBrake flag, so if we go back over the threshold the Brake state will be disactivated
+                }
+                break;
+
+            case REV:
+                if (DoubleTapReverse)
+                {   // Here we have just started commanding reverse from something else. Start counting taps. 
+                    if (DriveModeCommand_Previous != REV)
+                    {
+                        ReverseTaps +=1;
+
+                        if (ReverseTaps >= 2)
+                        {
+                            ReverseTaps = 2;
+                            DriveMode = REV;
+                            StoppedLongTime = false;            // Rset the StoppedLongTime flag because we are no longer stopped
+                            canChangeScheme = false;            // Also reset the canChangeScheme flag, we don't want to enter ChangeScheme mode while moving forward
+                        }
+                        else
+                        {
+                            if (millis() - Last_FWD_Time < FWD_to_REV_BrakeTime)  // FWD_to_REV_BrakeTime is defined in OSL_Settings.h
+                            { 
+                                DriveMode = STOP;               // A reverse command here, if it is only the first tap, is counted as a DriveMode = STOP
+                                Braking = true;                 // But also, it is counted as braking
+                            }
+                        }                        
+                    }
+
+                    // Here we are actually in reverse, not just commanding it
+                    if (DriveMode == REV)
+                    {   
+                        if (BrakeAtThrottlePctBelow > 0 && canBrake == false && abs(ThrottleCommand) > BrakeAtThrottlePctBelow)
+                        {   
+                            Braking = false;                            // Since we are above the threshold, we are not now braking
+                            canBrake = true;                            // But as we've exceeded the threshold, we can enable braking so that if we fall back below it the brake State can activate
+                        }
+                        
+                        if (BrakeAtThrottlePctBelow > 0 && canBrake == true && abs(ThrottleCommand) <= BrakeAtThrottlePctBelow)
+                        {   
+                            Braking = true;                             // We are below the threshold, so we can activate the Braking state
+                            canBrake = false;                           // But we also reset the canBrake flag, so if we go back over the threshold the Brake state will be disactivated
+                        }                        
+                    }
+                }
+                else
+                {
+                    DriveMode = REV;
+                    StoppedLongTime = false;                    // Reset the StoppedLongTime flag because we are no longer stopped
+                    canChangeScheme = false;                    // Also reset the canChangeScheme flag, we don't want to enter ChangeScheme mode while moving forward
+                    if (BrakeAtThrottlePctBelow > 0 && canBrake == false && abs(ThrottleCommand) > BrakeAtThrottlePctBelow)
+                    {   
+                        Braking = false;                            // Since we are above the threshold, we are not now braking
+                        canBrake = true;                            // But as we've exceeded the threshold, we can enable braking so that if we fall back below it the brake State can activate
+                    }
+                    
+                    if (BrakeAtThrottlePctBelow > 0 && canBrake == true && abs(ThrottleCommand) <= BrakeAtThrottlePctBelow)
+                    {
+                        Braking = true;                             // We are below the threshold, so we can activate the Braking state
+                        canBrake = false;                           // But we also reset the canBrake flag, so if we go back over the threshold the Brake state will be disactivated
+                    }              
+                }
+                break;
+
+            case STOP:
+                if (DriveModeCommand_Previous != STOP)
+                {   //Previously we were commanding something else, meaning we have just started the stop. 
+                    // This tells us we need to start the stop time counter
+                    StopCMDLength = millis();
+                    // We also reset the braking flag
+                    Braking = false;
+                    canBrake = false;
+                }
+                DriveMode = STOP;
+                break;
+                
+        }
 
 
-    // CALCULATE ACTUAL DRIVE MODE THAT THE CAR IS PRESENTLY IN
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-        // Drive Mode Command can be one of four things - Forward, Reverse, Stop or Brake. Each one may have some conditions
-        // to meet before we let our actual DriveMode = the commanded mode
+    // NOW WE KNOW OUR ACTUAL DRIVE MODE - TAKE CARE OF TURN SIGNALS AND STOP LENGTH
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>        
+        switch (DriveMode)
+        {
+            case FWD: 
+            case REV:
+                if (DriveMode_Previous != DriveMode)
+                {   // We've just started moving forwards or backwards. 
+                    // Should we leave the turn signal on even though we're now moving forward? 
+                    // TurnCommand != 0                 The wheels must be turned   
+                    // TurnFromStartContinue_mS > 0     User must have enabled this setting
+                    // BlinkTurnOnlyAtStop = true       This must be true, otherwise we just allow blinking all the time, so none of this is necessary
+                    // TurnSignal_Enable = true         This means the car has already been stopped for some length of time
+                    if (TurnCommand != 0 && TurnFromStartContinue_mS > 0 && BlinkTurnOnlyAtStop && TurnSignal_Enable) 
+                    {
+                        // In this case we have just begun starting to move, and our wheels are turned at the same time. 
+                        // We will keep the turn signals on for a brief period after starting, as set by TurnFromStartContinue_mS
+                        TurnSignalOverride = TurnCommand;                                 // TurnSignalOverride saves the turn direction, and will act as a fake turn command in the SetLights function
+                        timer.setTimeout(TurnFromStartContinue_mS, ClearBlinkerOverride); // ClearBlinkerOverride will set TurnSignalOverride back to 0 when the timer is up. 
+                    }
+                }   
+                break;
+
+            case STOP:
+                // Turn signal timer - start the timer when the car first comes to a stop. 
+                if (DriveMode_Previous != STOP)
+                {   // The car has only just now come to a stop. We begin a timer. Not until this timer runs out will a turn command (while still stopped)
+                    // actually engage the turn signal lights (if we are stills stopped when the timer expires). 
+                    // This is only if the user has specified BlinkTurnOnlyAtStop = true. 
+                    TurnSignal_Enable = false;
+                    TimeStopped = millis();
+                    // We use this same timer to delay the option of entering ChangeScheme mode
+                    canChangeScheme = false;
+                }
+                else 
+                {   // We have been stopped already. Check to see if the turn signal signal timer is up - if so, we will permit a turn command 
+                    // to engage the turn signal lights. This is only if the user has specified BlinkTurnOnlyAtStop = true. 
+                    if (TurnSignalDelay_mS > 0 && ((millis() - TimeStopped) >= TurnSignalDelay_mS))
+                    {
+                        TurnSignal_Enable = true;
+                        // After this much time has passed being stopped, we also allow the user to enter ChangeScheme mode if they want
+                        canChangeScheme = true;
+                    }        
         
-        // COMMAND STOP
-        // -------------------------------------------------------------------------------------------------------------------------------------------->   
-        // Are we attempting to stop? If so, we only consider ourselves truly stopped if we have been commanding it for a 
-        // specified length of time. The reason being, the car can take some time to coast to a stop - we may still want to apply brake during
-        // the coasting period, and if we set our mode to Stop right away, opposite throttle would not be counted as a brake, but as a change in 
-        // direction. 
-        if (DriveModeCommand == STOP)
-        {
-            if (DriveModeCommand_Previous == STOP)
-            {    // Check to see if we have been commanding stop long enough to change our DriveMode
-                // This length of time will be different depending on whether we are stopping from forward (longer) or from reverse (quite short)
-                if (DriveMode == FWD)
-                {
-                    if ((millis() - StopCMDLength) >= TimeToStop_FWD_mS)
+                    // Check to see if we have been stopped a "long" time, this will enable stop-delay effects
+                    if ((millis() - TimeStopped) >= LongStopTime_mS)
                     {
-                        DriveMode = STOP;    // Throttle has been in the Stop position for TimeToStop_FWD_mS: we assume we are now really stopped. 
+                        StoppedLongTime = true;
                     }
+                    
+                    // If we are stopped and have been stopped, we are also no longer decelerating, so reset these flags.
+                    Decelerating = false;
+                    Accelerating = false;
                 }
-                else if (DriveMode == REV)
-                {
-                    if ((millis() - StopCMDLength) >= TimeToStop_REV_mS)
-                    {
-                        DriveMode = STOP;    // Throttle has been in the Stop position for TimeToStop_REV_mS: we assume we are now really stopped. 
-                    }
-                }
-            }
-            else
-            {   //Previously we were commanding something else, so start the stop time counter
-                StopCMDLength = millis();
-            }
-        }
-        else
-        {
-            // If the user is not commanding Stop, reset the TurnSignal_Enable flag. 
-            TurnSignal_Enable = false;
-            // Also reset the canChangeScheme flag, we don't want to enter ChangeScheme mode while moving forward
-            canChangeScheme = false;
-            // And finally, reset the StoppedLongTime flag because we are no longer stopped
-            StoppedLongTime = false;
-        }        
-
-        // Turn signal timer - start the timer when the car first comes to a stop. 
-        if ((DriveMode == STOP) && (DriveMode_Previous != STOP))
-        {   // The car has only just now come to a stop. We begin a timer. Not until this timer runs out will a turn command (while still stopped)
-            // actually engage the turn signal lights. This is only if the user has specified BlinkTurnOnlyAtStop = true. 
-            TurnSignal_Enable = false;
-            TimeStopped = millis();
-            // We use this same timer to delay the option of entering ChangeScheme mode
-            canChangeScheme = false;
-        }
-        else if ((DriveMode == STOP) && (DriveMode_Previous == STOP))
-        {   // We have been stopped already. Check to see if the turn signal signal timer is up - if so, we will permit a turn command (while still stopped)
-            // to engage the turn signal lights. This is only if the user has specified BlinkTurnOnlyAtStop = true. 
-            if (TurnSignalDelay_mS > 0 && ((millis() - TimeStopped) >= TurnSignalDelay_mS))
-            {
-                TurnSignal_Enable = true;
-                // After this much time has passed being stopped, we also allow the user to enter ChangeScheme mode if they want
-                canChangeScheme = true;
-            }        
-
-            // Check to see if we have been stopped a "long" time, this will enable stop-delay effects
-            if ((millis() - TimeStopped) >= LongStopTime_mS)
-            {
-                StoppedLongTime = true;
-            }
-            
-            // If we are stopped and have been stopped, we are also no longer decelerating, so reset these flags.
-            Decelerating = false;
-            Accelerating = false;
-            canBackfire = false;
+                break;
         }
 
 
-        // DECELERATING
-        // -------------------------------------------------------------------------------------------------------------------------------------------->
+    // DECELERATING
+    // -------------------------------------------------------------------------------------------------------------------------------------------->
         // Here we are trying to identify sharp deceleration commands (user quickly letting off the throttle). 
-        // The "if" statement says: 
-        // - if we are not already decelerating, and
-        // - if we are presently moving forward, and
-        // - if the user is not commanding a reverse throttle, and
-        // - if the current throttle command is less than the prior command minus 20 (means, we have let off at least DecelPct steps of throttle since last time - there are 100 steps possible)
-        // Then if all this is true, we set the Decelerating flag
-        if ((DriveMode == FWD) && (ThrottleCommand >= 0) && (ThrottleCommand < ThrottleCommand_Previous - DecelPct))        
+        // We need to be moving in a direction (forward or reverse), and still commanding the same direction, but the throttle amount needs to have dropped by DecelPct.
+        if ( ((DriveMode == FWD) && (ThrottleCommand >= 0) && (ThrottleCommand < ThrottleCommand_Previous - DecelPct)) ||
+             ((DriveMode == REV) && (ThrottleCommand <= 0) && (ThrottleCommand > ThrottleCommand_Previous + DecelPct)) )        
         {   // We are decelerating
             Decelerating = true;
         }
@@ -708,8 +728,13 @@ void loop()
             Decelerating = false;
         }
 
-        // BACKFIRE Enable
-        // -------------------------------------------------------------------------------------------------------------------------------------------->
+
+    // BACKFIRE Enable
+    // -------------------------------------------------------------------------------------------------------------------------------------------->
+        // Backfire is confusingly the name of a LED setting (a series of random blinks), but also here canBackfire is a flag that refers to a timed 
+        // event that occurs when a heavy deceleration is detected. The length of time the canBackfire event lasts is set in AA_UserConfig.h (BF_Time_Short and BF_Time_Long)
+        // During that time, any settings specified under the Deceleration column will take effect, however the only setting that really makes sense there
+        // is BACKFIRE. When the timer is up, the lights will revert back to whatever they were previously.         
         if (Decelerating && !canBackfire)
         {   // The last backfire is over, and we have started decelerating again. Enable the backfire effect. 
             canBackfire = true;
@@ -722,12 +747,12 @@ void loop()
         }
 
 
-        // ACCELERATING
-        // -------------------------------------------------------------------------------------------------------------------------------------------->
+    // ACCELERATING
+    // -------------------------------------------------------------------------------------------------------------------------------------------->
         // Here we are trying to identify sharp acceleration commands. 
         // The "if" statement says: 
         // - if we are not already accelerating, and
-        // - if we are presently moving forward, and
+        // - if we are presently moving forward (we don't apply the accelerating state in reverse), and
         // - if the user is not commanding a reverse throttle, and
         // - if the current throttle command is greater than the prior command plus AccelPct (means, we have increased AccelPct throttle since last time)
         // Then if all this is true, we set the Accelerating flag
@@ -740,8 +765,9 @@ void loop()
             Accelerating = false;
         }
 
-        // OVERTAKE Enable
-        // -------------------------------------------------------------------------------------------------------------------------------------------->
+
+    // OVERTAKE Enable
+    // -------------------------------------------------------------------------------------------------------------------------------------------->
         // Overtaking is simply a timed event that occurs when a heavy acceleration is detected. The length of time the Overtake event lasts is set in 
         // UserConfig. During that time, any settings specified under the Acceleration column will take effect. When the timer is up, the lights will
         // revert back to whatever they were previously. 
@@ -753,152 +779,77 @@ void loop()
             OvertakeTimerID = timer.setTimeout(OvertakeTime, OvertakeOff);
         } 
         else if (Overtaking && !timer.isEnabled(OvertakeTimerID)) 
-        {   // disable Backfire effect if the timer has run out  
+        {   // disable overtaking effect if the timer has run out  
             Overtaking = false;
         }
 
-        // COMMAND BRAKE
-        // -------------------------------------------------------------------------------------------------------------------------------------------->           
-        // If we are braking, turn on the brake light
-        Braking = ReturnBrakeFlag(DriveMode_Previous, DriveModeCommand);
-        if (Braking) DriveModeCommand = STOP;   //Braking also counts as a stop command since that is what we will eventually be doing
-        
-        // COMMAND FORWARD
-        // -------------------------------------------------------------------------------------------------------------------------------------------->
-        // Are we attempting to transition to forward, and if so, is it presently allowed? 
-        if (DriveFlag == NO && DriveModeCommand == FWD)
-        {   // In this case we know we were previously at a stop, and we are now commanding forward
-            // We allow the transition if:
-            // A) We were moving forward before the stop (commanding same direction as previous), or
-            // B) The necessary amount of time has passed for a change in direction
-            if ((DriveMode_LastDirection == DriveModeCommand) || ((millis() - TransitionStart) >= TimeToShift_mS))
-            {
-                DriveMode = FWD;
-                DriveFlag = YES;
-                ReverseTaps = 0;        // Reset the reverse tap count
 
-                // Should we leave the turn signal on even though we're now moving forward? 
-                // TurnCommand != 0                 The wheels must be turned   
-                // TurnFromStartContinue_mS > 0     User must have enabled this setting
-                // BlinkTurnOnlyAtStop = true       This must be true, otherwise we just allow blinking all the time, so none of this is necessary
-                // TurnSignal_Enable = true         This means the car has already been stopped for some length of time, and is not just coasting (set by TurnSignalDelay_mS)
-                if (TurnCommand != 0 && TurnFromStartContinue_mS > 0 && BlinkTurnOnlyAtStop && TurnSignal_Enable) 
-                {
-                    // In this case we have just begun starting to move, and our wheels are turned at the same time. 
-                    // We will keep the turn signals on for a brief period after starting, as set by TurnFromStartContinue_mS
-                    TurnSignalOverride = TurnCommand;                                 // TurnSignalOverride saves the turn direction, and will act as a fake turn command in the SetLights function
-                    timer.setTimeout(TurnFromStartContinue_mS, ClearBlinkerOverride); // ClearBlinkerOverride will set TurnSignalOverride back to 0 when the timer is up. 
-                }
-            }
-        }
-        else if (DriveModeCommand == FWD && DriveMode_Previous == REV && TimeToShift_mS == 0)
-        {
-            DriveMode = FWD;
-            DriveFlag = YES;
-            ReverseTaps = 0;
-        }
-    
-        // COMMAND REVERSE
-        // -------------------------------------------------------------------------------------------------------------------------------------------->           
-        // Are we attempting to transition to reverse, and if so, is it presently allowed? 
-        if (DriveFlag == NO && DriveModeCommand == REV)
-        {   // In this case we know we were previously at a stop, and we are now commanding reverse
-            // We allow the transition if:
-            if (DriveMode_LastDirection == DriveModeCommand)
-            {   // A) We were moving in reverse before the stop (commanding same direction as previous)
-                DriveMode = REV;
-                DriveFlag = YES;
-            }
-            else if ((millis() - TransitionStart) >= TimeToShift_mS)
-            {   // or, we allow it if
-                // B) The necessary amount of time has passed for a change in direction AND, 
-                if ((DoubleTapReverse == true && ReverseTaps > 1) || (DoubleTapReverse == false))
-                {
-                    // C) If DoubleTapReverse = true, we also check to make sure the number of reverse taps is > 1
-                    //    otherwise the time constraint is all we need
-                    DriveMode = REV;
-                    DriveFlag = YES;
-                }
-            }
-
-            // Should we leave the turn signal on even though we're now moving backwards? 
-            // DriveFlag = YES                  One of the two checks above returned true (A, or B & C) - meaning, we are moving in reverse
-            // TurnCommand != 0                 The wheels must be turned   
-            // TurnFromStartContinue_mS > 0     User must have enabled this setting
-            // BlinkTurnOnlyAtStop = true       This must be true, otherwise we just allow blinking all the time, so none of this is necessary
-            // TurnSignal_Enable = true         This means the car has already been stopped for some length of time, and is not just coasting (set by TurnSignalDelay_mS)
-            if (DriveFlag == YES && TurnCommand != 0 && TurnFromStartContinue_mS > 0 && BlinkTurnOnlyAtStop && TurnSignal_Enable) 
-            {
-                // In this case we have just begun starting to move, and our wheels are turned at the same time. 
-                // We will keep the turn signals on for a brief period after starting, as set by TurnFromStartContinue_mS
-                TurnSignalOverride = TurnCommand;                                 // TurnSignalOverride saves the turn direction, and will act as a fake turn command in the SetLights function
-                timer.setTimeout(TurnFromStartContinue_mS, ClearBlinkerOverride); // ClearBlinkerOverride will set TurnSignalOverride back to 0 when the timer is up. 
-            }
-        }
-        else if (DriveModeCommand == REV && DriveMode_Previous == FWD && TimeToShift_mS == 0 && DoubleTapReverse == false)
-        {
-            DriveMode = REV;
-            DriveFlag = YES;
-            ReverseTaps = 0;
-        }        
-
-    // WE NOW HAVE OUR ACTUAL DRIVE MODE - SET THE LIGHTS ACCORDINGLY
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>    
+    // FINALLY - SET THE LIGHTS
+    // ------------------------------------------------------------------------------------------------------------------------------------------------>          
         SetLights(DriveMode);        // SetLights will take into account whatever position Channel 3 is in, as well as the present drive mode
-
-
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-    // GET READY FOR NEXT LOOP 
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-
-    // SHIFT TRANSITION TIMER 
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>  
-        // If we have just arrived at a stop, we start the transition timer. This will expire in TimeToShift_mS milliseconds. It is the length of time 
-        // we must wait before the car is allowed to change direction (either from forwad to reverse or from reverse to forward)
-        // This transition time can be set in UserConfig.h. It can even be zero. Some ESCs do require a time however and that is what we are trying to emulate here. 
-
-        // Start transition timer when we first reach a stop from a moving direction:
-        if (DriveMode_Previous != STOP && DriveModeCommand == STOP && DriveFlag == YES)
-        {   //Start Timer
-            TransitionStart = millis();
-            // Save last direction
-            DriveMode_LastDirection = DriveMode_Previous;
-            // While transition is underway, DriveFlag = No
-            DriveFlag = NO;
-        }
-    
-    // COUNT REVERSE TAPS
-    // ------------------------------------------------------------------------------------------------------------------------------------------------>  
-        // Most ESCs require the user to tap reverse twice before the car will actually go into reverse. This is to prevent the user from going straight
-        // into reverse from full speed ahead. However, some ESCs allow the user to disable this feature (eg, crawlers), so this setting can also be turned 
-        // off in UserConfig.h
-
-        // If reverse is commanded, count how many times the stick is moved to reverse - we are only truly moving in reverse on the second tap
-        // But we do ignore reverse stick when it is in fact a brake command.
-        if (DriveModeCommand == REV && DriveModeCommand_Previous == STOP )
-        {
-            ReverseTaps +=1;
-            if (ReverseTaps > 2)
-            {
-                ReverseTaps = 2;
-            }
-        }
 
 
     // DEBUGING
     // ------------------------------------------------------------------------------------------------------------------------------------------------>  
-        if ((DEBUG == true) && (DriveModeCommand_Previous != DriveModeCommand))
+        // There is an option in UserConfig.h to have the board LEDs reflect car movement, this can be useful for making sure OSL is reading your radio correctly.
+    
+        // If moving forward, green led is on, if moving backwards, red led is on. 
+        // If stopped, both are off.
+        // If braking, both are on. 
+        // If right turn, green LED blinks quickly
+        // If left turn, red LED blinks quickly
+ 
+        if (LED_DEBUG)
         {
-            Serial.print(F("Drive Command: "));
-            Serial.println(printMode(DriveModeCommand));
+            // First braking, which is not a drive mdoe
+            if (Braking)
+            { 
+                // While braking, both the Red and Green LEDs are On.
+                RedLED.on(); 
+                GreenLED.on(); 
+            } 
+            // Secondly, turn
+            else
+            {
+                if (Direction != Direction_Previous || (DriveModeCommand != DriveModeCommand_Previous && DriveModeCommand == STOP))
+                {
+                    if (Direction == RIGHT_TURN) GreenLED.startBlinking(); else GreenLED.off();     // Right turn   
+                    if (Direction == LEFT_TURN)  RedLED.startBlinking();   else RedLED.off();       // Left turn
+                    if (Direction == NO_TURN)  { GreenLED.off(); RedLED.off(); }                    // No turn
+                }
+                // Thirdly, movement forward, back or stop
+                else
+                {
+                    if (DriveMode != DriveMode_Previous || Braking != Braking_Previous)     // We need to add the braking check here as well as change in drive mode, in order to overwrite the LEDs with new values if Braking changes
+                    {
+                        // Only show the message on changes in DriveMode
+                        if (DEBUG && DriveMode_Previous != DriveMode) { Serial.print(F("Drive Mode: ")); Serial.println(printMode(DriveMode)); } // Actual drive mode, not commanded
+                        
+                        switch (DriveMode)
+                        {
+                            case FWD: 
+                                // When moving forward, the Green LED is on an the Red LED is Off
+                                RedLED.off(); 
+                                GreenLED.on();
+                                break;
+                            
+                            case REV: 
+                                // When moving in reverse, the Red LED is on an the Green LED is Off
+                                RedLED.on();  
+                                GreenLED.off();
+                                break;
+                            
+                            case STOP: 
+                                // When stopped both LEDs are off. But we let the user keep the brake lights on manually by holding brake even after they've stopped. 
+                                RedLED.off(); 
+                                GreenLED.off();
+                                break;
+                        }
+                    }
+                }
+            }
         }
 
-        if ((DEBUG == true) && (DriveMode_Previous != DriveMode))
-        {
-            Serial.print(F("Actual Drive Mode: "));
-            Serial.println(printMode(DriveMode));
-        }
-    
 
     //  SAVE COMMANDS FOR NEXT ITERATION
     // ------------------------------------------------------------------------------------------------------------------------------------------------>  
@@ -906,56 +857,11 @@ void loop()
         DriveMode_Previous = DriveMode;
         DriveModeCommand_Previous = DriveModeCommand;
         ThrottleCommand_Previous = ThrottleCommand;
+        TurnCommand_Previous = TurnCommand;
+        Channel3Command_Previous = Channel3Command;
+        Direction_Previous = Direction;
+        Braking_Previous = Braking;
 
+    } // End of code that only takes place when we are NOT in failsafe
 
 } // End of Loop
-
-
-
-
-
-
-void DumpDebug()
-{
-    // Channel pulse values 
-    Serial.println(F("PULSE:  Min - Ctr - Max"));
-    Serial.print(F("Throttle "));
-    Serial.print(ThrottlePulseMin);
-    PrintSpaceDash();
-    Serial.print(ThrottlePulseCenter);
-    PrintSpaceDash();
-    Serial.println(ThrottlePulseMax);
-
-    Serial.print(F("Turn "));
-    Serial.print(TurnPulseMin);
-    PrintSpaceDash();
-    Serial.print(TurnPulseCenter);
-    PrintSpaceDash();
-    Serial.println(TurnPulseMax);
-
-    Serial.print(F("Ch3 "));
-    Serial.print(Channel3PulseMin);
-    PrintSpaceDash();
-    Serial.print(Channel3PulseCenter);
-    PrintSpaceDash();
-    Serial.println(Channel3PulseMax);
-
-
-    // Channel Reversing
-    Serial.print(F(" - Throttle Channel Reverse: "));  
-    PrintTrueFalse(ThrottleChannelReverse);
-    Serial.print(F(" - Turn Channel Reverse: ")); 
-    PrintTrueFalse(TurnChannelReverse);
-    Serial.print(F(" - Channel 3 Reverse: "));  
-    PrintTrueFalse(Channel3Reverse);
-
-
-    // Channels disconnected? 
-    Serial.print(F("Steering Channel: "));
-    if (!CheckSteeringChannel() == true) { Serial.print(F("NOT ")); }
-    Serial.println(F("Connected")); 
-
-    Serial.print(F("Channel 3: "));
-    if (!CheckChannel3()) { Serial.print(F("NOT ")); }
-    Serial.println(F("Connected")); 
-}
