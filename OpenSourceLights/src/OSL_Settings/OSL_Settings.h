@@ -231,39 +231,4 @@
 
 
 
- /*
- * CREDITS!    CREDITS!    CREDITS!
- *----------------------------------------------------------------------------------------------------------------------------------------------------->
- * Several people have contributed code to this project
- *
- * LukeZ                March 2021 - added a new state called "No Turn" as opposed to right or left turn, which already existed. This now creates three
- *                          states on the steering channel, but the user does not have to connect their steering channel to this input - they could 
- *                          connect any other channel from their radio and therefore have a second, general-purpose 3 position switch for whatever they want
- * Wombii               RCGroups username Wombii
- *                          October 2019 - light fades are now handled incrementally instead of sequentially, which means that turn signals for exmaple
- *                          no longer occur one after the other but at the same time. 
- * Wombii               RCGroups username Wombii 
- *                          February 2019 - submitted code to average (smooth) incoming RC commands for those experiencing glitching. It can be enabled for 
- *                          any channel on the AA_UserConfig tab. See: https://www.rcgroups.com/forums/showthread.php?1539753-Open-Source-Lights-Arduino-based-RC-Light-Controller/page57#post41222591
- * Richard & Nick       RCGroups username "Rbhoogenboom" and "NickSegers"
- *                          June 2016 - created an Excel file to simplify the light setups. It will automatically generate the entire AA_LIGHT_SETUP file. 
- *                          Download from the first post of the thread linked above. 
- * Sergio Pizzotti      RCGroups username "wormch"
- *                          March 2015 - Made several impressive changes specifically for drift cars. Wrote all the code related to the backfiring and Xenon effects. 
- *                          Made ChangeSchemeMode more user-friendly, it can only be entered after the car has been stopped several seconds. 
- *                          Also fixed some bugs and taught me the F() macro!
- * Patrik               RCGroups username "Orque"
- *                          March 2015 - Expanded the Channel 3 functionality to read up to a 5 position switch (previously only worked to 3 positions)        
- * Jens                 RCGroups username "learningarduino"
- *                          October 2014 - Fixed bugs related to pin initialization and debug printing. 
- * Peter                RCGroups username "4x4_RC_Pit"
- *                          September 2014 - Fixed several bugs in the RadioSetup routine. Also the first person to post a video of OSL in action.
- * JChristensen         We are using Christensen's button library unchanged. It has been renamed from Button to OSL_Button simply because there are many Arduino
- *                      button libraries, and we don't want the install of this one to conflict with others you may already have. See JChristensen's project page here:
- *                      https://github.com/JChristensen/Button
- *
- * Open Source Lights is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License v3 as published by
- * the Free Software Foundation (http://www.gnu.org/licenses/)
- *
 */
