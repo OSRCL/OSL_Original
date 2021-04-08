@@ -82,30 +82,53 @@ void DumpSystemInfo()
 // Show each setting for each state for each light in tabular format out the serial port
 void DumpLightSchemeToSerial(int WhatScheme)
 {
-    int i;
-    int j;
-    int MySetting;
+    uint8_t i;
+    uint8_t j;
+    uint8_t whatSetting;
+    uint8_t padding;
     
     if (WhatScheme <= NumSchemes)
     {   // Schemes are zero-based, so if they pass Scheme 1 what we really want to show is Scheme 0
         WhatScheme -= 1;
-        Serial.print(F("SCHEME: "));
+        Serial.print(F("Active Scheme: "));
         Serial.print(WhatScheme+1);
         Serial.println();
         PrintLine(80);
+        Serial.print(F("Light   ")); 
+        Serial.print(F("Pos 1         Pos 2         Pos 3         Pos 4         Pos 5         "));
+        PerLoopUpdates();
+        Serial.print(F("Forward       Reverse       Stop          StopDelay     Brake         "));
+        PerLoopUpdates();
+        Serial.print(F("Right Turn    Left Turn     No Turn       Accelerating  Decelerating  "));
+        PerLoopUpdates();
+        Serial.println();
+        // If we try to print the full line all at once, we will lose track of the radio. 
+        // This is kind of silly but we break it up. Would be better to program the ability to temporarily suspend radio
+        // reads without changing RC_State but I'm too lazy.
+        PrintLineWOLineBreak(50);
+        PerLoopUpdates();
+        PrintLineWOLineBreak(50);
+        PerLoopUpdates();
+        PrintLineWOLineBreak(50);
+        PerLoopUpdates();
+        PrintLineWOLineBreak(50);
+        PerLoopUpdates();
+        PrintLine(16);      // We want 216 dashes
         for (i=0; i<NumLights; i++)
         {
             PerLoopUpdates();
-            Serial.print(F("Light #"));
+            Serial.print(F(" "));
             Serial.print(i+1);
-            Serial.print(F(" States: "));
+            Serial.print(F("      "));
             for (j=0; j<NumStates; j++)
             {
                 PerLoopUpdates();
-                MySetting = pgm_read_word_near(&(Schemes[WhatScheme][i][j]));    
-                //Serial.print(MySetting,DEC);
-                Serial.print(ptrLightSetting(MySetting));
-                Serial.print(F("  "));
+                whatSetting = pgm_read_word_near(&(Schemes[WhatScheme][i][j]));
+                padding = pgm_read_word_near(&(_SettingNamesPadding[whatSetting]));
+                // Serial.print(whatSetting,DEC);
+                // Serial.print(padding, DEC);
+                Serial.print(ptrLightSettingCap(whatSetting));
+                PrintSpaces(padding);
             }
             Serial.println();
         }
@@ -150,19 +173,20 @@ void PrintSpaces(uint8_t spaces)
     }
 }
 
-void PrintLine(uint8_t len)
+
+void PrintLineWOLineBreak(uint8_t len)
 {
     for (uint8_t i=0; i<len; i++)
     {
         Serial.print(F("-"));
-    }
-    Serial.println();
+    }    
 }
 
-//void PrintHorizontalLine()
-//{
-    //Serial.println(F("-----------------------------------"));
-//}
+void PrintLine(uint8_t len)
+{
+    PrintLineWOLineBreak(len);
+    Serial.println();
+}
 
 void PrintTrueFalse(boolean boolVal)
 {
@@ -185,6 +209,3 @@ void PrintLineYesNo(boolean boolVal)
     PrintYesNo(boolVal);
     Serial.println();
 }
-
-
-
