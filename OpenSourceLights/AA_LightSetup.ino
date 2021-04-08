@@ -11,7 +11,7 @@
     // - Channel 3 - Position 2
     // - Channel 3 - Position 3    (This is the middle position if using a 3-position switch)
     // - Channel 3 - Position 4
-    // - Channel 3 - Position 5    (This is position "3" if using a 3-position switch, or position "2" if using a 2-position switch)
+    // - Channel 3 - Position 5    (This is position 3 if using a 3-position switch, or position 2 if using a 2-position switch)
     // - Forward
     // - Reverse
     // - Stop
