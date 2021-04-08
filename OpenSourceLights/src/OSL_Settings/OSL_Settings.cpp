@@ -11,6 +11,14 @@ const __FlashStringHelper *ptrLightSetting(char setting)
 	return Names[setting];
 };
 
+// Same thing, but these are the official capitalized versions
+const __FlashStringHelper *ptrLightSettingCap(char setting) 
+{
+	if(setting>LAST_LIGHT_SETTING) setting=LS_UNKNOWN;
+	const __FlashStringHelper *Names[LAST_LIGHT_SETTING+1]={F("OFF"), F("ON"),F("NA"),F("BLINK"),F("FASTBLINK"),F("SOFTBLINK"),
+														    F("DIM"),F("FADEOFF"),F("FADEON"),F("XENON"),F("BACKFIRE"),F("UNKNOWN")};
+	return Names[setting];
+};
 
 // Function to help us print out actual drive mode names, rather than numbers. 
 // To use, call something like this:  Serial.print(printMode(DriveModeCommand));

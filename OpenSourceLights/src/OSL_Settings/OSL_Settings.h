@@ -59,6 +59,7 @@
 
 	// For every state, each light output can have the following settings. 
 	// Giving names to numerical values allows the user to easily create their own light setup
+	#define COUNT_SETTINGS				 12
 	#define OFF					          0
 	#define ON					          1
 	#define NA                            2         
@@ -71,8 +72,27 @@
 	#define XENON                         9
 	#define BACKFIRE                     10 
 	#define LS_UNKNOWN			         11
-	#define LAST_LIGHT_SETTING	LS_UNKNOWN
-	const __FlashStringHelper *ptrLightSetting(char setting); //Returns a character string that is name of the light setting.	
+	#define LAST_LIGHT_SETTING	 LS_UNKNOWN
+	const __FlashStringHelper *ptrLightSetting(char setting); //Returns a character string that is name of the light setting (more friendly name format)
+	const __FlashStringHelper *ptrLightSettingCap(char setting); //Same thing, but the official capitalized names
+	
+	// For debugging, we'd like to print a neat table showing the scheme settings. This array lets us know how many spaces to pad
+	// after each name. We are looking for a consistent 14 characters, so the padding is 14 - number of characters in name
+	const PROGMEM uint8_t _SettingNamesPadding[COUNT_SETTINGS] = 
+	{   11,			// OFF
+		12,			// ON
+		12,			// NA
+		 9,			// BLINK
+		 5,			// FASTBLINK
+		 5,			// SOFTBLINK
+		11,			// DIM
+		 7,			// FADEOFF
+		 8,			// FADEON
+	     9,			// XENON
+		 6,			// BACKFIRE
+		 7			// UNKNOWN 
+	};
+	
 	
 	// These are simplifications of the turn channel state. We have the actual command, but this lets us know simply in which direction is the wheel turned
 	#define RIGHT_TURN			          1
@@ -192,7 +212,6 @@
 
 
 
-
 // ------------------------------------------------------------------------------------------------------------------------------------------------------->>
 // EEPROM macros
 // ------------------------------------------------------------------------------------------------------------------------------------------------------->>
@@ -224,6 +243,13 @@
 	// leeway, but if you need to save a few bytes you can drop this number. 
     
 	#define MAX_SIMPLETIMER_SLOTS         5
+
+
+
+// ------------------------------------------------------------------------------------------------------------------------------------------------------->>
+// SERIAL
+// ------------------------------------------------------------------------------------------------------------------------------------------------>
+    #define BaudRate                 38400          // This is the default baud rate for communication with the computer. 
 
 
 
