@@ -270,17 +270,20 @@ void loop()
 
 
     // Scheme change variables
-    #define CS_MAX_TURN                      90                 // 90 percent of Turn Command, we consider this a full turn for purposes of the change-scheme selection
-    #define CS_MIN_TURN                      20                 // 20 percent of Turn Command, this is the minimum movement to be considered a turn command during Change-Scheme-Mode
+    #define CSM_StopDelay_mS               3000L                // How long after being stopped should we wait before we enable the user to enter change-scheme-mode
+    #define CS_MAX_TURN                       90                // 90 percent of Turn Command, we consider this a full turn for purposes of the change-scheme selection
+    #define CS_MIN_TURN                       20                // 20 percent of Turn Command, this is the minimum movement to be considered a turn command during Change-Scheme-Mode
     static byte RightCount                  = 0;                // We use these to count up the number of times the user has cranked the
     static byte LeftCount                   = 0;                // steering wheel completely over. 
-    #define ChangeModeTime_mS              2000L                // Amount of time user has to enter Change-Scheme-Mode 
+    #define ChangeModeTime_mS              2000L                // Amount of time user has to enter Change-Scheme-Mode (this is the time within which they must turn the wheel back and forth rapidly)
     static boolean ChangeSchemeTimerFlag = false;               // Has the timer begun
     static int CSM_TurnTimerID;                                 // An ID for the timer that counts the turns of the wheel                      
     static int8_t ExitSchemeFlag            = 0;                // A flag to indicate whether or not to exit Change-Scheme-Mode
+    #define CSM_ChangeTime_mS                400                // How long to hold the wheel over to increment/decrement to the next scheme
     #define CSM_TimeToWait_mS              1200L                // Time to wait between change-scheme commands (otherwise as long as you held the wheel over it would keep cycling through rapidly)
     #define CSM_TimeToExit_mS              3000L                // How long to hold the wheel over until Change-Scheme-Mode is exited
     static unsigned long CSM_ExitStart;                         // Start time of the exit waiting period
+    #define CSM_InactiveExit_Time         20000L                // If there are no commands given for this length of time, automatically exit change-scheme-mode
     static boolean TimeoutFlag;
     static boolean HoldFlag; 
     static unsigned long HoldStart;
@@ -506,7 +509,7 @@ void loop()
                         HoldStart = millis();
                     }
                     ExitSchemeFlag = 0;     // If we make it to here they are no longer trying to exit, so reset
-                    if ((millis() - HoldStart) >= 500)
+                    if ((millis() - HoldStart) >= CSM_ChangeTime_mS)
                     {   HoldFlag = false;
                         if ((millis() - TransitionStart) >= CSM_TimeToWait_mS)    // Only change scheme if we've waited long enough from last command
                         {   if (TurnCommand > 0) 
@@ -540,8 +543,8 @@ void loop()
                 {   // User is exiting out of Change-Scheme-Mode
                     ChangeSchemeMode = false;
                 }
-                else if (TimeoutFlag &&  ((millis() - CSM_ExitStart) >= 20000L))
-                {   // No movement of steering wheel for 20 seconds - automatic exit
+                else if (TimeoutFlag &&  ((millis() - CSM_ExitStart) >= CSM_InactiveExit_Time))
+                {   // No movement of steering wheel for a long time - automatic exit
                     ChangeSchemeMode = false;
                 }
             }
@@ -696,10 +699,14 @@ void loop()
                     if (TurnSignalDelay_mS > 0 && ((millis() - TimeStopped) >= TurnSignalDelay_mS))
                     {
                         TurnSignal_Enable = true;
-                        // After this much time has passed being stopped, we also allow the user to enter ChangeScheme mode if they want
-                        canChangeScheme = true;
                     }        
-        
+
+                    // We have been stopped already. Check to see if enough time has passed to enable entry into Change-Scheme-Mode, if the user desires
+                    if (millis() - TimeStopped >= CSM_StopDelay_mS)
+                    {
+                        canChangeScheme = true;                        
+                    }
+                    
                     // Check to see if we have been stopped a "long" time, this will enable stop-delay effects
                     if ((millis() - TimeStopped) >= LongStopTime_mS)
                     {

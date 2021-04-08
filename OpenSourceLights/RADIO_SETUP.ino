@@ -298,6 +298,3 @@ BlinkStream bs;     // Used for some blinking effects
     RedLED.off();       
 
 }
-
-
-
