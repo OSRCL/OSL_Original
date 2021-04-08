@@ -1,12 +1,12 @@
-// ------------------------------------------------------------------------------------------------------------------------------------------------>
-// THIS IS WHERE YOU DETERMINE THE SETTINGS FOR YOUR LIGHTS
-// ------------------------------------------------------------------------------------------------------------------------------------------------>
+// ---------------------------------------------------------------------------------------------------------------------------------------------------->
+// THIS IS WHERE YOU SPECIFY THE SETTINGS FOR YOUR LIGHTS
+// ---------------------------------------------------------------------------------------------------------------------------------------------------->
 
     // SETUP INSTRUCTIONS 
 
     // EXPLANATION OF STATES
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-    // Each light can respond to multiple different conditions, or states. These are: 
+    // Each light can respond to multiple different conditions, or States. These are: 
     // - Channel 3 - Position 1    
     // - Channel 3 - Position 2
     // - Channel 3 - Position 3    (This is the middle position if using a 3-position switch)
@@ -40,8 +40,8 @@
     // For each light, you need to specify what will happen in each state - this is called the setting. The possible settings are: 
     // - ON
     // - OFF
-    // - FADEOFF        * Fades off slowly, time set in AA_UserConfig.h (FadeOutTime)
     // - FADEON         * Fades on slowly, time set in AA_UserConfig.h (FadeInTime)
+    // - FADEOFF        * Fades off slowly, time set in AA_UserConfig.h (FadeOutTime)
     // - NA
     // - BLINK            Will blink at the rate set in AA_UserConfig.h (BlinkInterval)
     // - SOFTBLINK        A blink that recreates the look of old incandescant light bulbs. The timing of this blink is not user adjustable. 
@@ -76,7 +76,7 @@
         {
         //                                     IF CHANNEL 3 is only 3-position switch, values in Pos2 and Pos4 will be ignored (just use Pos1, Pos3, Pos5)
         //     SCHEME ONE - EXAMPLE PROVIDED
-        //     Pos 1         Pos 2         Pos 3         Pos 4         Pos 5         Forward       Reverse       Stop          StopDelay     Brake         Right Turn    Left Turn     No Turn      Accelerating   Decelerating
+        //     Pos 1         Pos 2         Pos 3         Pos 4         Pos 5         Forward       Reverse       Stop          StopDelay     Brake         Right Turn    Left Turn     No Turn       Accelerating  Decelerating
         // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             {  OFF,          OFF,          XENON,        XENON,        XENON,        NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           FASTBLINK,    NA           },  // Light 1    -- Headlight One - XENON on when Channel 3 is in the middle-to-far position - FASTBLINK on overtaking
             {  FADEOFF,      FADEOFF,      ON,           ON,           ON,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA           },  // Light 2    -- Headlight Two - ON when Channel 3 is in the middle-to-far position, fadeoff otherwise
@@ -89,7 +89,7 @@
         },
         {
         //     SCHEME TWO - BLANK
-        //     Pos 1         Pos 2         Pos 3         Pos 4         Pos 5         Forward       Reverse       Stop          StopDelay     Brake         Right Turn    Left Turn     No Turn      Accelerating   Decelerating
+        //     Pos 1         Pos 2         Pos 3         Pos 4         Pos 5         Forward       Reverse       Stop          StopDelay     Brake         Right Turn    Left Turn     No Turn       Accelerating  Decelerating
         // ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
             {  OFF,          OFF,          OFF,          OFF,          OFF,          NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA           },  // Light 1    -- 
             {  OFF,          OFF,          OFF,          OFF,          OFF,          NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA           },  // Light 2    -- 
@@ -101,6 +101,3 @@
             {  OFF,          OFF,          OFF,          OFF,          OFF,          NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA,           NA           }   // Light 8    -- 
         }
     };
-
-
-
