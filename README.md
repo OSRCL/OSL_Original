@@ -27,7 +27,7 @@ Some features:
 **Board version 1.7**  
 See the "hardware" folder in this repository for Eagle board files, schematic, and bill of materials. 
   * [Printable Schematic](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Schematic.pdf) (PDF)
-  * [Bill of Materials](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.pdf)
+  * [Bill of Materials](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.pdf) (PDF)
   * [Purchase PCBs at OSH Park](https://oshpark.com/shared_projects/kmCzNipk)
   * [Other user designs](http://www.openpanzer.org/forum/index.php?page=osl_other)
 <br/>
