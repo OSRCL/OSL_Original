@@ -20,11 +20,11 @@ Some features:
 ## Resources  
   * [OSL Wiki](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl)
   * [RC Groups Discussion Thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)
-  * [Complete collection of resources and downloads here](http://openpanzer.org/downloads#OSL)
+  * [Complete collection of resources and downloads](http://openpanzer.org/downloads#OSL)
 <br/>
 
 ## OSL Hardware
-**Board version 1.7**
+**Board version 1.7**  
 See the "hardware" folder in this repository for Eagle board files, schematic, and bill of materials. 
   * [Printable Schematic](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Schematic.pdf) (PDF)
   * [Bill of Materials](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.pdf)
