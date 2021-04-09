@@ -15,15 +15,15 @@ Some features:
   * The collection of all Settings for all lights in all States is called a **Scheme**. Multiple schemes can be defined and you can switch between them from your transmitter.
   * Schemes and other operating adjustments are made in the free Arduino IDE. Everything is well explained and you don't need to know how to write code.
   * Works with both 5 and 6 volt RC systems
-
-
+<br/>
+<br/>
 
 ## Resources  
   * [OSL Wiki](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl)
   * [RC Groups Discussion Thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)
   * [Prior firmware versions](http://www.openpanzer.org/forum/index.php?page=priorosl)
-
-
+<br/>
+<br/>
 
 ## OSL Hardware
 **Board version 1.7**
@@ -34,8 +34,8 @@ Some features:
   * [Gerber files](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Gerbers.zip) (Zip)
   * [Other user designs](http://www.openpanzer.org/forum/index.php?page=osl_other)
   * Obsolete versions of OSL hardware: [see here](http://www.openpanzer.org/forum/index.php?page=old_osl)
-
-
+<br/>
+<br/>
 
 ## Getting Started with Arduino
 First you will need to install the Arduino IDE on your computer, [you can download it from here](https://www.arduino.cc/en/software).
