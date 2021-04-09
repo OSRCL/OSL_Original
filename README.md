@@ -17,10 +17,13 @@ Some features:
   * Works with both 5 and 6 volt RC systems
 
 
+
 ## Resources  
   * [OSL Wiki](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl)
   * [RC Groups Discussion Thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)
   * [Prior firmware versions](http://www.openpanzer.org/forum/index.php?page=priorosl)
+
+
 
 ## OSL Hardware
 **Board version 1.7**
@@ -31,6 +34,7 @@ Some features:
   * [Gerber files](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Gerbers.zip) (Zip)
   * [Other user designs](http://www.openpanzer.org/forum/index.php?page=osl_other)
   * Obsolete versions of OSL hardware: [see here](http://www.openpanzer.org/forum/index.php?page=old_osl)
+
 
 
 ## Getting Started with Arduino
