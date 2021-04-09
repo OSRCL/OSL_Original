@@ -20,18 +20,16 @@ Some features:
 ## Resources  
   * [OSL Wiki](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl)
   * [RC Groups Discussion Thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)
-  * [Prior firmware versions](http://www.openpanzer.org/forum/index.php?page=priorosl)
+  * [Complete collection of resources and downloads here](http://openpanzer.org/downloads#OSL)
 <br/>
 
 ## OSL Hardware
 **Board version 1.7**
-  * [Eagle Board Files](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Eagle.zip) (Zip)
+See the "hardware" folder in this repository for Eagle board files, schematic, and bill of materials. 
   * [Printable Schematic](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Schematic.pdf) (PDF)
-  * Bill of Materials - [PDF](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.pdf) - [Excel](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.xls)
-  * [Bare boards at OSH Park](https://oshpark.com/shared_projects/kmCzNipk)
-  * [Gerber files](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Gerbers.zip) (Zip)
+  * [Bill of Materials](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.pdf)
+  * [Purchase PCBs at OSH Park](https://oshpark.com/shared_projects/kmCzNipk)
   * [Other user designs](http://www.openpanzer.org/forum/index.php?page=osl_other)
-  * Obsolete versions of OSL hardware: [see here](http://www.openpanzer.org/forum/index.php?page=old_osl)
 <br/>
 
 ## Getting Started with Arduino
