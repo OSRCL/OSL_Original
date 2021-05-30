@@ -412,5 +412,3 @@ void AllLightsOff()
         LightOutput[i].off();
     }
 }
-
-

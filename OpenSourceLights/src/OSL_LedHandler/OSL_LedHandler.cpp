@@ -27,6 +27,7 @@ void OSL_LedHandler::begin(byte p, boolean i /*=false*/, boolean w /*=false*/)
     _invert = i;                // Save invert status
 	_pwmable = w;				// Can we analog-write to this pin (pwm-able)
 	_fadeType = FADE_TYPE_EXP;	// Default fade type
+	_blinkToDim = false;		//
     pinMode(_pin, OUTPUT);      // Set pin to OUTPUT
     _ledPriorState = LED_STATE_OFF;
 	_ledCurState = LED_STATE_OFF;
@@ -99,7 +100,8 @@ void OSL_LedHandler::offWithExtra(boolean includeExtra /* = false */)
 			else
 			{	// Otherwise we can go directly to off
 				this->pinOff();
-				_pwm = MIN_PWM;	
+				_pwm = MIN_PWM;
+				_blinkToDim	= false;
 			}
 		}
 	}
@@ -109,7 +111,8 @@ void OSL_LedHandler::offWithExtra(boolean includeExtra /* = false */)
 		changeLEDState(LED_STATE_OFF);	
 
 		this->pinOff();
-		_pwm = MIN_PWM;		
+		_pwm = MIN_PWM;
+		_blinkToDim	= false;
 	}
 }
 
@@ -154,6 +157,7 @@ void OSL_LedHandler::dim(uint8_t level)
 		{	// Here we can go directly to dim
 			this->clearUpdateProcess();
 			changeLEDState(LED_STATE_DIM);
+			_blinkToDim = true;			// If from here we start blinking, we will want to know to blink from dim rather than off
 			this->setPWM(level);
 		}
 	}
@@ -307,6 +311,7 @@ void OSL_LedHandler::FadeTo(uint8_t desiredLevel)
 		// We're close enough, just go straight to the desired level
 		this->clearUpdateProcess();
 		changeLEDState(LED_STATE_DIM);
+		_blinkToDim = true;
 		this->setPWM(desiredLevel);
 	}
 	else
@@ -432,8 +437,20 @@ static boolean skipme = true;
 				if (_curStep < _numSteps)
 				{
 					// LED on or off
-					if (_curStep & 1) { this->pinOff(); }  // Odd numbers get turned off
-					else              { this->pinOn();  }  // Even numbers get turned on
+					if (_curStep & 1) 		// Odd numbers get turned off
+					{ 
+						if (_blinkToDim == true)					
+						{					// Except if we are blinking to dim, we don't go all the way off but rather to dim
+							this->setPWM(_pwm);
+						}
+						else
+						{
+							this->pinOff(); }  
+						}  					
+					else              		// Even numbers get turned on
+					{ 				   
+						this->pinOn();  
+					}
 
 					// Calculate time to next change
 					if (!_fixedInterval)
@@ -562,6 +579,7 @@ static boolean skipme = true;
 							// Set to target and finish.
 							this->clearUpdateProcess();
 							changeLEDState(LED_STATE_DIM);
+							_blinkToDim = true;
 							this->setPWM(_pwmTarget);						
 						}
 					}
@@ -581,6 +599,7 @@ static boolean skipme = true;
 							// Set to target and finish.
 							this->clearUpdateProcess();
 							changeLEDState(LED_STATE_DIM);
+							_blinkToDim = true;
 							this->setPWM(_pwmTarget);											
 						}
 					}					
@@ -687,6 +706,7 @@ static boolean skipme = true;
 								_pwm = _pwmTarget;		// clearUpdateProcess will clear _pwmTarget so we need to save it now
 								this->clearUpdateProcess();
 								changeLEDState(LED_STATE_DIM);
+								_blinkToDim = true;
 								this->setPWM(_pwm);	
 							}
 							else
@@ -747,6 +767,7 @@ static boolean skipme = true;
 								_pwm = _pwmTarget;		// clearUpdateProcess will clear _pwmTarget so we need to save it now
 								this->clearUpdateProcess();
 								changeLEDState(LED_STATE_DIM);
+								_blinkToDim = true;
 								this->setPWM(_pwm);	
 							}
 							else

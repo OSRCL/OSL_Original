@@ -135,6 +135,7 @@ class OSL_LedHandler
         uint16_t        _nextWait;
         boolean         _fixedInterval;
         BlinkStream     _blinkStream;
+		boolean			_blinkToDim;
         float           _fadeAdjustment;
 		uint8_t			_ledCurState;
 		uint8_t			_ledPriorState;
