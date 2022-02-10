@@ -1,9 +1,9 @@
 # Open Source RC Lights
 (aka, "OSL")
 
-![OSL Board](http://openpanzer.org/images/osl/OSL_gh.jpg "Assembled OSL Board")
+![OSL Board](https://openpanzer.org/images/osl/OSL_gh.jpg "Assembled OSL Board")
 
-**--> [INSTRUCTIONS & DOCUMENTATION AVAILABLE HERE](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl) <--**
+**--> [INSTRUCTIONS & DOCUMENTATION AVAILABLE HERE](https://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl) <--**
 
 OSL is an Arduino-based, open source project for controlling lights in RC cars and trucks. It uses an ATmega328 as the processor and has 8 light outputs. All the components on the board are through-hole which makes it easy to assemble and solder. 
  
@@ -18,18 +18,18 @@ Some features:
 <br/>
 
 ## Resources  
-  * [OSL Wiki](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl)
+  * [OSL Wiki](https://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl)
   * [RC Groups Discussion Thread](http://www.rcgroups.com/forums/showthread.php?t=1539753)
-  * [Complete collection of resources and downloads](http://openpanzer.org/downloads#OSL)
+  * [Complete collection of resources and downloads](https://openpanzer.org/downloads#OSL)
 <br/>
 
 ## OSL Hardware
 **Board version 1.7**  
 See the "hardware" folder in this repository for Eagle board files, schematic, and bill of materials. 
-  * [Printable Schematic](http://www.openpanzer.org/downloads/osl/eagle/OpenSourceLights_v17_Schematic.pdf) (PDF)
-  * [Bill of Materials](http://www.openpanzer.org/downloads/osl/bom/OpenSourceLights_BOM.pdf) (PDF)
+  * [Printable Schematic](https://www.openpanzer.org/secure_downloads/osl/eagle/OpenSourceLights_v17_Schematic.pdf) (PDF)
+  * [Bill of Materials](https://www.openpanzer.org/secure_downloads/osl/bom/OpenSourceLights_BOM.pdf) (PDF)
   * [Purchase PCBs at OSH Park](https://oshpark.com/shared_projects/kmCzNipk)
-  * [Other user designs](http://www.openpanzer.org/forum/index.php?page=osl_other)
+  * [Other user designs](https://www.openpanzer.org/forum/index.php?page=osl_other)
 <br/>
 
 ## Getting Started with Arduino
@@ -46,4 +46,4 @@ Next download the OSL source files (Arduino calls this a "sketch"). Click the gr
    - In the IDE, go to the Tools menu and select Board -> Arduino AVR Boards -> "Arduino Nano." In fact several boards would work, but "Nano" is the easiest to remember.
    - Make sure we have the correct processor selected. Go to Tools -> Processor -> and select "ATmega328P". **Note:** Some users may need to select "Atmega328P (Old Bootloader)" if they have problems loading the sketch onto their device.
 
-3. Compile. This is done by clicking the checkmark button at the top left of the IDE window, or by going to the Sketch menu and clicking "Verify/Compile." The IDE will run for a few moments then give you the results of the compilation at the bottom of the screen. If successful, you are ready to modify the sketch so that it does what you want! Read this page in the OSL Wiki for more information: [Modifying the Sketch](http://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl:sketch)
+3. Compile. This is done by clicking the checkmark button at the top left of the IDE window, or by going to the Sketch menu and clicking "Verify/Compile." The IDE will run for a few moments then give you the results of the compilation at the bottom of the screen. If successful, you are ready to modify the sketch so that it does what you want! Read this page in the OSL Wiki for more information: [Modifying the Sketch](https://openpanzer.org/wiki/doku.php?id=wiki:otherprojects:osl:sketch)
