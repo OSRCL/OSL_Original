@@ -400,6 +400,7 @@ void AllLightsOn()
     for (int i=0; i<NumLights; i++)
     {    
         LightOutput[i].on();
+        CurrentLightSetting[i] = ON;
     }
 }
 
@@ -410,5 +411,6 @@ void AllLightsOff()
     for (int i=0; i<NumLights; i++)
     {    
         LightOutput[i].off();
+        CurrentLightSetting[i] = OFF;
     }
 }

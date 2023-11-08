@@ -43,7 +43,7 @@
     // -------------------------------------------------------------------------------------------------------------------------------------------------->            
         OSL_LedHandler                   RedLED;
         OSL_LedHandler                 GreenLED;
-        OSL_LedHandler  LightOutput[NumLights];                // LED handler for each output (NUM_LIGHT_OUTPUTS is defined in OSL_Settings.h)
+        OSL_LedHandler   LightOutput[NumLights];                // LED handler for each output (NUM_LIGHT_OUTPUTS is defined in OSL_Settings.h)
         OSL_Button                  InputButton;                // Button object, will get set later in Setup() when we know what hardware version we are running on.
 
     // Simple Timer
@@ -127,8 +127,8 @@
                                                                 // we just wait a short amount of time (user configurable in AA_UserConfig.h, variable TurnFromStartContinue_mS)
     // Light Settings
     // ------------------------------------------------------------------------------------------------------------------------------------------------>
-        uint8_t LightSettings[NumLights][NumStates];           // An array to hold the settings for each state for each light. 
-        uint8_t CurrentLightSetting[NumLights];                // What state is the light in presently
+        uint8_t LightSettings[NumLights][NumStates];            // An array to hold the settings for each state for each light. 
+        uint8_t CurrentLightSetting[NumLights];                 // What state is the light in presently
         boolean canBackfire             = false;                // Is the backfiring effect currently active?
         uint16_t backfire_timeout;                              // Will save the random timeout interval to turn off the LED
         int BackfireTimerID                 = 0;                // Backfire event timer ID

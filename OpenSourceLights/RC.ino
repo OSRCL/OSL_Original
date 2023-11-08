@@ -34,7 +34,7 @@ void InitializeRCChannels(void)
         RC_Channel[i].lastGoodPulseTime = 0;
         RC_Channel[i].acquireCount = 0;
         RC_Channel[i].numSwitchPos = 5;             // We can read up to a 5 position switch
-        RC_Channel[i].switchPos = 0;                // For switch channels, start in the first position (0)
+        RC_Channel[i].switchPos = Pos1;             // For switch channels, start in the first position
     }
 
     // Settings distinct for individual channels
@@ -64,6 +64,9 @@ void InitializeRCChannels(void)
     RC_Channel[2].deadband = 0;
     RC_Channel[2].smooth = SmoothChannel3;
     RC_Channel[2].smoothedValue = 0;
+    RC_Channel[2].switchPos = Pos1;                 // Default to Position 1, which is the default position when no Channel 3 is attached
+    RC_Channel[2].rawPulseWidth = 1000;             // Let's set the default pulse width to the equivalent of Pos1 just so it all matches
+    RC_Channel[2].pulse = 1000;                     // idem
     eeprom_read(RC_Channel[2].pulseMin, E_Channel3PulseMin);    
     eeprom_read(RC_Channel[2].pulseMax, E_Channel3PulseMax);    
     eeprom_read(RC_Channel[2].pulseCenter, E_Channel3PulseCenter);
@@ -402,6 +405,3 @@ uint8_t PulseToMultiSwitchPos(_rc_channel &ch)
                 
     return POS;
 }
-
-
-
