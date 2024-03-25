@@ -59,19 +59,21 @@
 
 	// For every state, each light output can have the following settings. 
 	// Giving names to numerical values allows the user to easily create their own light setup
-	#define COUNT_SETTINGS				 12
+	#define COUNT_SETTINGS				 14
 	#define OFF					          0
 	#define ON					          1
 	#define NA                            2         
-	#define BLINK                         3         
-	#define FASTBLINK                     4
-	#define SOFTBLINK                     5
-	#define DIM                           6
-	#define FADEOFF                       7
-	#define FADEON						  8
-	#define XENON                         9
-	#define BACKFIRE                     10 
-	#define LS_UNKNOWN			         11
+	#define BLINK                         3    
+	#define BLINK_ALT				      4     
+	#define FASTBLINK                     5
+	#define FASTBLINK_ALT				  6	
+	#define SOFTBLINK                     7
+	#define DIM                           8
+	#define FADEOFF                       9
+	#define FADEON						 10
+	#define XENON                        11
+	#define BACKFIRE                     12
+	#define LS_UNKNOWN			         13
 	#define LAST_LIGHT_SETTING	 LS_UNKNOWN
 	const __FlashStringHelper *ptrLightSetting(char setting); //Returns a character string that is name of the light setting (more friendly name format)
 	const __FlashStringHelper *ptrLightSettingCap(char setting); //Same thing, but the official capitalized names
@@ -83,7 +85,9 @@
 		12,			// ON
 		12,			// NA
 		 9,			// BLINK
+		 5,			// BLINK_ALT		 
 		 5,			// FASTBLINK
+		 1,			// FASTBLINK_ALT		 
 		 5,			// SOFTBLINK
 		11,			// DIM
 		 7,			// FADEOFF

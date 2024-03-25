@@ -43,6 +43,7 @@ typedef struct                                          	// This struct holds an
 {
     uint16_t        interval[MAX_STREAM_STEPS];
     boolean         repeat;
+	boolean			altBlink;
 } BlinkStream;
 
 #define DEFAULT_BLINK_INTERVAL              378				// Used when an interval is not specified, though OSL always will
@@ -100,7 +101,7 @@ class OSL_LedHandler
         void Blink(uint16_t interval=DEFAULT_BLINK_INTERVAL);                   // Blinks once at interval specified
         void Blink(uint8_t times, uint16_t interval=DEFAULT_BLINK_INTERVAL);    // Overload - Blinks N times at interval specified (on and off interval will be the same)
 		void Blink(uint8_t times, uint16_t on_interval=DEFAULT_BLINK_INTERVAL, uint16_t off_interval=DEFAULT_BLINK_INTERVAL);   // Overload - Blinks N times at intervals specified (on and off time individually set)
-        void startBlinking(uint16_t on_interval=DEFAULT_BLINK_INTERVAL, uint16_t off_interval=DEFAULT_BLINK_INTERVAL);   // Starts a continuous blink at the set intervals
+        void startBlinking(uint16_t on_interval=DEFAULT_BLINK_INTERVAL, uint16_t off_interval=DEFAULT_BLINK_INTERVAL, boolean alt=false);   // Starts a continuous blink at the set intervals
 		void stopBlinking(void);
 		void softBlink(void);
         void StreamBlink(BlinkStream bs, uint8_t numSteps);

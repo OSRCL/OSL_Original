@@ -186,15 +186,23 @@ void SetLight(int WhatLight, int WhatSetting)
             break;       
             
         case BLINK:
-            LightOutput[WhatLight].startBlinking(BlinkInterval, BlinkInterval);
+            LightOutput[WhatLight].startBlinking(BlinkInterval, BlinkInterval, false);
             break;
-        
-        case SOFTBLINK:
-            LightOutput[WhatLight].softBlink();
-            break;
+
+        case BLINK_ALT:
+            LightOutput[WhatLight].startBlinking(BlinkInterval, BlinkInterval, true);
+            break;            
             
         case FASTBLINK:
-            LightOutput[WhatLight].startBlinking(FastBlinkInterval, FastBlinkInterval);
+            LightOutput[WhatLight].startBlinking(FastBlinkInterval, FastBlinkInterval, false);
+            break;
+                                
+        case FASTBLINK_ALT:
+            LightOutput[WhatLight].startBlinking(FastBlinkInterval, FastBlinkInterval, true);
+            break;
+            
+        case SOFTBLINK:
+            LightOutput[WhatLight].softBlink();
             break;
        
         case DIM:

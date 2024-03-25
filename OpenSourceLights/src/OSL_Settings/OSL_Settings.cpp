@@ -6,8 +6,10 @@
 const __FlashStringHelper *ptrLightSetting(char setting) 
 {
 	if(setting>LAST_LIGHT_SETTING) setting=LS_UNKNOWN;
-	const __FlashStringHelper *Names[LAST_LIGHT_SETTING+1]={F("Off"), F("On"),F("N/A"),F("Blink"),F("Fast Blink"),F("Soft Blink"),
-														    F("Dim"),F("Fade-off"),F("Fade-on"),F("Xenon"),F("Backfire"),F("Unknown")};
+	const __FlashStringHelper *Names[LAST_LIGHT_SETTING+1]={F("Off"), F("On"),F("N/A"),F("Blink"),F("Blink Alt"),
+															F("Fast Blink"),F("Fast Blink Alt"),F("Soft Blink"),
+														    F("Dim"),F("Fade-off"),F("Fade-on"),F("Xenon"),F("Backfire"),
+															F("Unknown")};
 	return Names[setting];
 };
 
@@ -15,8 +17,10 @@ const __FlashStringHelper *ptrLightSetting(char setting)
 const __FlashStringHelper *ptrLightSettingCap(char setting) 
 {
 	if(setting>LAST_LIGHT_SETTING) setting=LS_UNKNOWN;
-	const __FlashStringHelper *Names[LAST_LIGHT_SETTING+1]={F("OFF"), F("ON"),F("NA"),F("BLINK"),F("FASTBLINK"),F("SOFTBLINK"),
-														    F("DIM"),F("FADEOFF"),F("FADEON"),F("XENON"),F("BACKFIRE"),F("UNKNOWN")};
+	const __FlashStringHelper *Names[LAST_LIGHT_SETTING+1]={F("OFF"), F("ON"),F("NA"),F("BLINK"),F("BLINK_ALT"),
+															F("FASTBLINK"),F("FASTBLINK_ALT"),F("SOFTBLINK"),
+														    F("DIM"),F("FADEOFF"),F("FADEON"),F("XENON"),F("BACKFIRE"),
+															F("UNKNOWN")};
 	return Names[setting];
 };
 

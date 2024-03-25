@@ -197,6 +197,7 @@ void OSL_LedHandler::Blink(uint8_t times, uint16_t on_interval, uint16_t off_int
     Blinker.interval[0] = on_interval;      // On
     Blinker.interval[1] = off_interval;     // Off
     Blinker.repeat = false;					// Non repeating
+	Blinker.altBlink = false;				// Not alternating
     this->StreamBlink(Blinker, 2);          // 2 steps
 }
 
@@ -206,12 +207,13 @@ void OSL_LedHandler::stopBlinking(void)
     clearUpdateProcess();
 }
 
-void OSL_LedHandler::startBlinking(uint16_t on_interval, uint16_t off_interval)
+void OSL_LedHandler::startBlinking(uint16_t on_interval, uint16_t off_interval, boolean alt)
 {
 	BlinkStream Blinker;    
 	Blinker.interval[0] = on_interval;      // On
 	Blinker.interval[1] = off_interval;     // Off
 	Blinker.repeat = true;
+	Blinker.altBlink = alt;
 	this->StreamBlink(Blinker, 2);          // 2 steps
 }
 
@@ -223,7 +225,8 @@ void OSL_LedHandler::StreamBlink(BlinkStream bs, uint8_t numSteps)
     _nextWait = _blinkStream.interval[0];
     if (numSteps > MAX_STREAM_STEPS) numSteps = MAX_STREAM_STEPS; 
     _numSteps = numSteps; 
-    this->pinOn();                     // Start with the Led on. User needs to call the update() function to update the next steps 
+    if (_blinkStream.altBlink)	this->pinOff();	// Start with the Led off. User needs to call the update() function to update the next steps 
+	else						this->pinOn();	// Start with the Led on.  User needs to call the update() function to update the next steps
     _time = 0; 
 	changeLEDState(LED_STATE_BLINK);
 }
@@ -437,19 +440,41 @@ static boolean skipme = true;
 				if (_curStep < _numSteps)
 				{
 					// LED on or off
-					if (_curStep & 1) 		// Odd numbers get turned off
-					{ 
-						if (_blinkToDim == true)					
-						{					// Except if we are blinking to dim, we don't go all the way off but rather to dim
-							this->setPWM(_pwm);
-						}
-						else
+					if (_curStep & 1) 							// Odd numbers get turned off (except for alt flag)
+					{
+						if (_blinkStream.altBlink == false)		
 						{
-							this->pinOff(); }  
-						}  					
-					else              		// Even numbers get turned on
+							if (_blinkToDim == true)					
+							{
+								this->setPWM(_pwm);				// Except if we are blinking to dim, we don't go all the way off but rather to dim				
+							}
+							else
+							{
+								this->pinOff();					// Regular case, and not blinking to dim - turn off
+							}
+						}
+						else									// Alt case	- turn on						
+						{
+							this->pinOn();						// Alt version, odd number - turn on
+						}
+					}
+					else              							// Even numbers get turned on (except for alt flag)
 					{ 				   
-						this->pinOn();  
+						if (_blinkStream.altBlink == false)
+						{
+							this->pinOn();  					// Regular case - turn on
+						}
+						else									// Alt case - turn off
+						{	
+							if (_blinkToDim == true)					
+							{
+								this->setPWM(_pwm);				// Except if we are blinking to dim, we don't go all the way off but rather to dim				
+							}
+							else								
+							{
+								this->pinOff();					// Alt case, and not blinking to dim - turn off
+							}
+						}
 					}
 
 					// Calculate time to next change
@@ -470,7 +495,8 @@ static boolean skipme = true;
 					{   // Start over
 						_nextWait = _blinkStream.interval[0];
 						_curStep = 0;
-						this->pinOn();
+						if (_blinkStream.altBlink)	this->pinOff();							
+						else						this->pinOn();						
 						_time = 0;
 					}
 					else

@@ -107,8 +107,11 @@
 
     // Blinking
     // ------------------------------------------------------------------------------------------------------------------------------------------------>    
-        #define BlinkInterval              378          // A value in milliseconds that sets the blink rate for blinking lights set to "BLINK" (for example, turn signals). 1000 = 1 second
-        #define FastBlinkInterval           50          // A value in milliseconds that sets the fast blink rate for lights set to "FASTBLINK"
+        #define BlinkInterval              378          // A value in milliseconds that sets the blink rate for blinking lights set to "BLINK" or "BLINK_ALT" (for example, turn signals). 1000 = 1 second
+        #define FastBlinkInterval           50          // A value in milliseconds that sets the fast blink rate for lights set to "FASTBLINK" or "FASTBLINK_ALT"
+                                                        // The "_ALT" versions blink just like the regular versions, but in an alternating fashion - that is, if you have one output set to FASTBLINK, 
+                                                        // and another to FASTBLINK_ALT, they will each blink at the same rate (FastBlinkInterval) but when one is on the other will be off, and vice-versa. 
+                                                        // This can be used to create effects such as those seen on police cars, fire trucks, and other emergency vehicles.
         
 
     // Dim

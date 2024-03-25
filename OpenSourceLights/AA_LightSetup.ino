@@ -44,8 +44,10 @@
     // - FADEOFF        * Fades off slowly, time set in AA_UserConfig.h (FadeOutTime)
     // - NA
     // - BLINK            Will blink at the rate set in AA_UserConfig.h (BlinkInterval)
-    // - SOFTBLINK        A blink that recreates the look of old incandescant light bulbs. The timing of this blink is not user adjustable.
+    // - BLINK_ALT        Same as BLINK but alternating
     // - FASTBLINK        Will blink at the fast rate set in AA_UserConfig.h (FastBlinkInterval)
+    // - FASTBLINK_ALT    Same as FASTBLINK but alternating    
+    // - SOFTBLINK        A blink that recreates the look of old incandescant light bulbs. The timing of this blink is not user adjustable.
     // - DIM            * Will dim to the level set in AA_UserConfig.h (DimLevel)
     // - XENON          * Turns a light on but with a special effect that looks like a xenon bulb turning on
     // - BACKFIRE         Special effect that blinks a light randomly for a short period of time (use this under the Decelerating state for tailpipe/muffler LEDs)
