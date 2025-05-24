@@ -363,6 +363,30 @@ void OSL_LedHandler::randomBlink(void)
 	changeLEDState(LED_STATE_RANDOMBLINK);		// Change state to random blink
 }
 
+void OSL_LedHandler::SafetyBlink(uint16_t sbRate, uint8_t sbCount, uint16_t sbInt, boolean alt)
+{
+	_safetyBlinkRate = sbRate;
+	_safetyBlinkCount = sbCount;
+	_safetyBlinkCountTimesTwo = sbCount * 2; 	// Do this once and save it so we don't repeat the calculation over and over
+	_safetyBlinkInterval = sbInt;
+	_AltProcess = alt;
+
+	if (_AltProcess)
+	{	// Start off with a pause equal to the blink time of the regular side
+		_nextWait = _safetyBlinkRate * _safetyBlinkCount;
+		this->pinOff();
+	}
+	else
+	{	// Start on and blinking
+		_nextWait = _safetyBlinkRate;
+		this->pinOn();   
+	}
+	_time = 0;
+	_curStep = 1;
+	changeLEDState(LED_STATE_SAFETYBLINK);
+
+}
+
 void OSL_LedHandler::Xenon(void)
 {
 	// The Xenon effect will only work with pins capable of PWM
@@ -702,6 +726,126 @@ static boolean skipme = true;
 		}
 		break; 
 	
+		case LED_STATE_SAFETYBLINK:
+		{
+			if (_nextWait > 0 && _time > _nextWait)
+			{		
+				if (_AltProcess)
+				{	
+					// The ALTernate process: 
+					// 1. Pause while the non-Alt blinks
+					// 2. Interval if any
+					// 3. Perform blinking (while non-Alt pauses)
+					// 4. Interval if any
+					// repeat. 
+					
+					// 1. Pause while the non-Alt performs its blinking
+					if (_curStep == 1 )
+					{	
+						_nextWait = _safetyBlinkRate * _safetyBlinkCount;
+					}
+
+					// 2. Interval if any
+					if (_curStep == 2 )
+					{	
+						if (_safetyBlinkInterval > 0)
+						{
+							_nextWait = _safetyBlinkInterval;
+						}
+						else
+						{
+							_curStep += 1;	// Skip to next step
+						}
+					}			
+					
+					// 3. Perform blinking while non-Alt pauses. No need to subtract 1 here because the blinking has not been started elsewhere. 
+					if (_curStep > 2 && _curStep <= _safetyBlinkCountTimesTwo + 2)
+					{	
+						this->toggle();
+						_nextWait = _safetyBlinkRate;
+					}
+					
+					// 4. Interval if any
+					if (_curStep == _safetyBlinkCountTimesTwo + 3 )
+					{	
+						if (_safetyBlinkInterval > 0)
+						{
+							_nextWait = _safetyBlinkInterval;
+							_curStep = 0;	// Set it to zero so it will go to 1 below, which is our starting number
+						}
+						else
+						{
+							_nextWait = _safetyBlinkRate * _safetyBlinkCount;
+							_curStep = 1;	// Will be set to 2 below, this then skips step 1 which is performed here instead. 
+						}
+					}
+			
+					_curStep += 1;
+					_time = 0;				
+				}
+				else
+				{	
+					// The regular process: 
+					// 1. Perform blinking (while Alt pauses)
+					// 2. Interval if any
+					// 3. Pause while Alt blinks
+					// 4. Interval if any
+					// repeat. 
+					
+					// 1. Perform blinking (while Alt pauses). Minus one because the first on period has already expired
+					if (_curStep <= _safetyBlinkCountTimesTwo - 1)
+					{
+						this->toggle();
+						_nextWait = _safetyBlinkRate;
+					}
+					
+					// 2. Interval if any
+					if (_curStep == _safetyBlinkCountTimesTwo )
+					{	
+						if (_safetyBlinkInterval > 0)
+						{
+							_nextWait = _safetyBlinkInterval;
+						}
+						else
+						{
+							_curStep += 1;	// Skip to next step
+						}
+					}
+					
+					// 3. Pause while Alt performs its blinking
+					if (_curStep == _safetyBlinkCountTimesTwo + 1 )
+					{	
+						_nextWait = _safetyBlinkRate * _safetyBlinkCount;
+					}
+					
+					// 4. Interval if any
+					if (_curStep == _safetyBlinkCountTimesTwo + 2 )
+					{	
+						if (_safetyBlinkInterval > 0)
+						{
+							_nextWait = _safetyBlinkInterval;
+						}
+						else
+						{
+							_curStep += 1;	// Skip to next step
+						}
+					}		
+				
+					// Re-initialize
+					if (_curStep == _safetyBlinkCountTimesTwo + 3 )
+					{	// First blink, same as we did when the safety blink was initiated
+						_nextWait = _safetyBlinkRate;
+						this->toggle();
+						_curStep = 0;	// Set to zero so it gets incremented to 1 below
+					}					
+					
+					_curStep += 1;					
+					_time = 0;
+				}
+			}
+		}
+		break; 
+
 		case LED_STATE_SOFTBLINK:
 		{	
 			if (_nextWait > 0 && _time > _nextWait)

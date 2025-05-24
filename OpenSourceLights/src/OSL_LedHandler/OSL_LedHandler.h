@@ -36,6 +36,7 @@
 #define LED_STATE_FADE				   	      6	
 #define LED_STATE_XENON				          7	
 #define LED_STATE_FADE_TO				      8	
+#define LED_STATE_SAFETYBLINK				  9
 
 // Stream blinker struct
 #define MAX_STREAM_STEPS                    10            	// A stream consists of a pattern of on/off blinks separated by user-specified lengths of time. A single blink (on/off) takes 2 steps. 
@@ -110,6 +111,7 @@ class OSL_LedHandler
 		void FadeTo(uint8_t desiredLevel);
         void stopFading(void);		
 		void Xenon(void);
+		void SafetyBlink(uint16_t sbRate, uint8_t sbCount, uint16_t sbInt, boolean alt=false);	
         
 		
     private:
@@ -131,6 +133,7 @@ class OSL_LedHandler
 		uint8_t         _fadeDirection;		
 		uint8_t			_curProcessStep;
 		uint8_t			_numProcessSteps;
+		boolean		    _AltProcess;
         uint8_t         _curStep;
 		uint8_t         _numSteps;
         uint16_t        _nextWait;
@@ -140,6 +143,10 @@ class OSL_LedHandler
         float           _fadeAdjustment;
 		uint8_t			_ledCurState;
 		uint8_t			_ledPriorState;
+		uint16_t		_safetyBlinkRate;
+		uint8_t			_safetyBlinkCount;
+		uint16_t		_safetyBlinkInterval;
+		uint16_t		_safetyBlinkCountTimesTwo;
 };
 
 

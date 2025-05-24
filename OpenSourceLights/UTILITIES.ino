@@ -95,11 +95,11 @@ void DumpLightSchemeToSerial(int WhatScheme)
         Serial.println();
         PrintLine(80);
         Serial.print(F("Light   ")); 
-        Serial.print(F("Pos 1         Pos 2         Pos 3         Pos 4         Pos 5         "));
+        Serial.print(F("Pos 1           Pos 2           Pos 3           Pos 4           Pos 5           "));
         PerLoopUpdates();
-        Serial.print(F("Forward       Reverse       Stop          StopDelay     Brake         "));
+        Serial.print(F("Forward         Reverse         Stop            StopDelay       Brake           "));
         PerLoopUpdates();
-        Serial.print(F("Right Turn    Left Turn     No Turn       Accelerating  Decelerating  "));
+        Serial.print(F("Right Turn      Left Turn       No Turn         Accelerating    Decelerating    "));
         PerLoopUpdates();
         Serial.println();
         // If we try to print the full line all at once, we will lose track of the radio. 
@@ -113,7 +113,7 @@ void DumpLightSchemeToSerial(int WhatScheme)
         PerLoopUpdates();
         PrintLineWOLineBreak(50);
         PerLoopUpdates();
-        PrintLine(16);      // We want 216 dashes
+        PrintLine(44);      // We want 244 dashes
         for (i=0; i<NumLights; i++)
         {
             PerLoopUpdates();

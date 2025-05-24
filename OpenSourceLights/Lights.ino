@@ -201,6 +201,14 @@ void SetLight(int WhatLight, int WhatSetting)
             LightOutput[WhatLight].startBlinking(FastBlinkInterval, FastBlinkInterval, true);
             break;
             
+        case SAFETYBLINK:       
+            LightOutput[WhatLight].SafetyBlink(SafetyBlinkRate, SafetyBlinkCount, SafetyBlink_Pause, false);
+            break;
+
+        case SAFETYBLINK_ALT:
+            LightOutput[WhatLight].SafetyBlink(SafetyBlinkRate, SafetyBlinkCount, SafetyBlink_Pause, true);
+            break;
+        
         case SOFTBLINK:
             LightOutput[WhatLight].softBlink();
             break;
