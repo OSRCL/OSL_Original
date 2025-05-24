@@ -11,7 +11,7 @@ Some features:
   * Control up to 8 light circuits
   * Accepts three channels of RC input (throttle, steering, and an optional 3rd channel)
   * Each light can respond to various model **States**: forward, reverse, stopped, stopped after delay, braking, right turn, left turn, no turn, accelerating, decelerating, and any of up to 5 positions for the channel 3 switch if attached. 
-  * For each light in each State the **Setting** defines the behavior of the light: on, off, fade on, fade off, blink, fast blink (and the alternate versions of blink and fast blink), soft blink, dim, xenon-on effect, or backfire effect.
+  * For each light in each State the **Setting** defines the behavior of the light: on, off, fade on, fade off, blink, fast blink, safety blink (and the alternate versions of blink, fast blink, and safety blink), soft blink, dim, xenon-on effect, or backfire effect.
   * The collection of all Settings for all lights in all States is called a **Scheme**. Multiple schemes can be defined and you can switch between them from your transmitter.
   * Schemes and other operating adjustments are made in the free Arduino IDE. Everything is well explained and you don't need to know how to write code.
   * Works with both 5 and 6 volt RC systems
