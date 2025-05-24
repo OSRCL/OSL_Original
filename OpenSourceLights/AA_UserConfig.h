@@ -132,7 +132,7 @@
         // on one side of the vehicle, then that same pattern being displayed on the other side, alternating back and forth. This effect is created by using the 
         // SAFETYBLINK and SAFETYBLINK_ALT settings in AA_LightSetup. 
         #define SafetyBlinkRate             40         // Rate of blinking for the SafetyBlink effect in milliseconds - small numbers are fast, large numbers are slow. 
-        #define SafetyBlinkCount             3         // The number of blinks in a row, followed by a pause while the "ALT" side performs the same series.
+        #define SafetyBlinkCount             3         // The number of blinks in a row on one side, then the same number of blinks will occur on the other ("ALT") side, alternating back and forth. 
         #define SafetyBlink_Pause           80         // The length of time to pause between a series of blinks on one side followed by a series on the other side, in milliseconds. 
                                                        // If you don't want a pause, set this to zero. 
 
